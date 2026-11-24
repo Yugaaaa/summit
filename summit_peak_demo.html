@@ -1,0 +1,1107 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>SUMMIT: The Last Ascent — AAA Expedition Edition</title>
+<style>
+:root{
+  color-scheme:dark;
+  --fg:#f0f6fc;
+  --bg:#050a12;
+  --ac:#ffb347;
+  --ac2:#ffdf9e;
+  --ice:#7ad7ff;
+  --ok:#64f0a8;
+  --danger:#ff5263;
+  --glass:linear-gradient(145deg,rgba(8,18,32,0.82),rgba(18,34,52,0.68));
+  --border:rgba(165,220,255,0.22);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);overflow:hidden;font:14px 'Inter',system-ui,-apple-system,sans-serif;user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;inset:0;pointer-events:none;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+
+/* Top-Left Stage & Vitals Cluster */
+#topLeft{position:fixed;top:18px;left:20px;display:flex;flex-direction:column;gap:8px;width:230px}
+#stage{color:var(--ac2);font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;padding:8px 12px;border-left:3px solid var(--ac);background:var(--glass);border-top:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 4px 4px 0;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.vitalsCard{background:var(--glass);border:1px solid var(--border);border-radius:6px;padding:10px 12px;backdrop-filter:blur(10px);box-shadow:0 12px 32px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:7px}
+.b{position:relative;width:100%;height:18px;background:rgba(4,10,18,.85);border:1px solid rgba(183,217,236,.2);border-radius:3px;overflow:hidden}
+.b i{position:absolute;inset:0;width:100%;transition:width .2s cubic-bezier(.2,.8,.2,1),background .25s}
+#pS i{background:linear-gradient(90deg,#2b8cbe,#7bccc4)}
+#pW i{background:linear-gradient(90deg,#e67e22,#f9d423)}
+#pH i{background:linear-gradient(90deg,#1d6fa5,#74d7ff)}
+#pF i{background:linear-gradient(90deg,#389e64,#8ee5a1)}
+.b.lo i{background:linear-gradient(90deg,#b73046,#ff7676)!important;animation:pulseLo 1.2s infinite alternate}
+@keyframes pulseLo{from{filter:brightness(.9)}to{filter:brightness(1.25)}}
+.b span{position:absolute;left:9px;top:0;line-height:18px;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;text-shadow:0 1px 3px #000;color:#fff;font-weight:700;display:flex;justify-content:space-between;width:calc(100% - 18px)}
+
+/* Top-Center Compass & Objective Banner */
+#topCenter{position:fixed;top:18px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;width:min(420px,46vw)}
+#compassWrap{position:relative;width:240px;height:26px;background:var(--glass);border:1px solid var(--border);border-radius:4px;overflow:hidden;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+#compassStrip{position:absolute;top:0;left:0;height:26px;line-height:26px;white-space:nowrap;font-size:10px;font-weight:700;letter-spacing:.28em;color:#dff6ff;text-shadow:0 1px 4px #000;will-change:transform}
+#compassWrap:after{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--ac);box-shadow:0 0 8px var(--ac);transform:translateX(-50%)}
+#mission{width:100%;color:#eaf6ff;background:var(--glass);border:1px solid var(--border);border-top:2px solid var(--ac);border-radius:4px;padding:9px 14px;box-shadow:0 10px 30px rgba(0,0,0,.45);letter-spacing:.07em;text-align:center;backdrop-filter:blur(10px)}
+#mission b{display:block;color:var(--ac2);font-size:10px;letter-spacing:.18em;margin-bottom:2px;text-transform:uppercase}
+#mission span{font-size:11.5px;opacity:.92}
+
+/* Top-Right Telemetry & Demo Warp Button */
+#topRight{position:fixed;top:18px;right:20px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+#info{text-align:right;background:var(--glass);border:1px solid var(--border);padding:11px 15px;border-radius:6px;line-height:1.65;letter-spacing:.08em;font-size:10px;text-transform:uppercase;box-shadow:0 12px 35px rgba(0,0,0,.45);min-width:195px;backdrop-filter:blur(10px)}
+.demoPill{pointer-events:auto;background:linear-gradient(135deg,rgba(255,179,71,.22),rgba(122,215,255,.18));border:1px solid rgba(255,204,131,.55);color:var(--ac2);padding:7px 13px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(0,0,0,.4);transition:all .18s}
+.demoPill:hover{background:linear-gradient(135deg,rgba(255,179,71,.4),rgba(122,215,255,.3));transform:translateY(-1px);color:#fff}
+
+/* Bottom Action Dock */
+#sup{position:fixed;bottom:18px;left:20px;background:var(--glass);border:1px solid var(--border);padding:10px 15px;border-radius:6px;letter-spacing:.11em;text-transform:uppercase;font-size:10px;box-shadow:0 8px 28px rgba(0,0,0,.45);backdrop-filter:blur(10px)}
+#equipHud{position:fixed;bottom:18px;right:20px;background:var(--glass);border:1px solid rgba(255,179,71,.38);padding:10px 15px;border-radius:6px;letter-spacing:.1em;text-transform:uppercase;font-size:10px;box-shadow:0 8px 28px rgba(0,0,0,.45);text-align:right;backdrop-filter:blur(10px)}
+#equipHud b{color:var(--ac2);display:block;font-size:11px;margin-bottom:3px}
+.kbd{display:inline-block;padding:1px 5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:3px;font-size:9px;color:#fff;font-weight:700}
+
+/* Steep Pitch Timing Gauge */
+#climbGauge{position:fixed;left:50%;top:57%;transform:translateX(-50%);width:240px;background:rgba(5,12,22,.9);border:1px solid rgba(122,215,255,.55);padding:9px 13px;border-radius:6px;text-align:center;box-shadow:0 10px 35px rgba(0,0,0,.65);backdrop-filter:blur(8px)}
+#climbGauge .tit{font-size:9.5px;font-weight:700;letter-spacing:.18em;color:#9ee4ff;text-transform:uppercase;margin-bottom:6px}
+#climbGauge .track{position:relative;height:10px;background:#091524;border:1px solid rgba(255,255,255,.18);border-radius:2px;overflow:hidden}
+#climbGauge .sweet{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,#2ecc71bb,#a3ffacdd,#2ecc71bb)}
+#climbGauge .pin{position:absolute;top:-2px;bottom:-2px;width:4px;background:#ffb347;box-shadow:0 0 10px #ffb347}
+#climbGauge .hint{font-size:9px;letter-spacing:.11em;color:#cfe8f5;margin-top:6px;text-transform:uppercase}
+
+#msg{position:fixed;bottom:14%;left:50%;transform:translateX(-50%);width:min(740px,92%);text-align:center;font-size:clamp(13px,1.5vw,16px);font-weight:500;letter-spacing:.07em;text-shadow:0 1px 10px #000,0 0 24px #000;padding:11px 20px;background:linear-gradient(90deg,transparent,rgba(6,16,28,.85),transparent);border-top:1px solid rgba(210,241,255,.28);border-bottom:1px solid rgba(210,241,255,.16)}
+#x{position:fixed;left:50%;top:50%;width:16px;height:16px;margin:-8px;border:1px solid rgba(236,249,255,.72);border-radius:50%;box-shadow:0 0 14px rgba(200,239,255,.4)}#x:after{content:'';position:absolute;left:6px;top:6px;width:2px;height:2px;background:#fff;border-radius:50%}
+
+/* Demo Landmark Fast-Travel Drawer [M / Tab] */
+#demoDrawer{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(3,8,16,.76);backdrop-filter:blur(9px);pointer-events:auto;z-index:25}
+.demoModal{width:min(760px,94vw);background:linear-gradient(155deg,#091626f5,#13273bf7);border:1px solid rgba(142,216,236,.45);border-radius:8px;padding:22px 26px;box-shadow:0 25px 80px rgba(0,0,0,.85)}
+.demoHead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(165,220,255,.2);padding-bottom:12px;margin-bottom:14px}
+.demoHead h3{margin:0;color:var(--ac2);font-size:14px;letter-spacing:.2em;text-transform:uppercase}
+.demoSub{font-size:11px;color:#a5c7d9;margin-bottom:14px;line-height:1.5}
+.demoGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.locCard{background:rgba(6,14,24,.85);border:1px solid rgba(165,220,255,.22);border-radius:6px;padding:12px 14px;text-align:left;cursor:pointer;transition:all .16s;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
+.locCard:hover{border-color:var(--ac);background:rgba(22,42,64,.92);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.locCard .tag{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ice);font-weight:700}
+.locCard b{font-size:13px;color:#fff;letter-spacing:.05em}
+.locCard span{font-size:11px;color:#9ebcc8;line-height:1.4}
+.demoControls{margin-top:14px;padding-top:12px;border-top:1px solid rgba(165,220,255,.2);display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}
+.miniBtn{background:rgba(255,255,255,.08);border:1px solid rgba(165,220,255,.3);color:#e6f5ff;padding:7px 12px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.miniBtn:hover{background:rgba(255,179,71,.25);border-color:var(--ac);color:#fff}
+
+/* Inventory & Camp Modals */
+#inventory{position:fixed;right:20px;bottom:76px;width:min(420px,calc(100% - 40px));padding:16px;background:linear-gradient(145deg,#071320f7,#15283af7);border:1px solid rgba(142,216,236,.45);border-radius:6px;box-shadow:0 20px 70px rgba(0,0,0,.85);pointer-events:auto;z-index:15;backdrop-filter:blur(10px)}
+#inventory h3{margin:0 0 10px;color:var(--ac2);letter-spacing:.18em;font-size:12px;text-transform:uppercase}
+#inventory .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.slot{padding:9px 10px;background:rgba(5,12,22,.85);border:1px solid rgba(185,228,255,.18);border-radius:4px;font-size:10px;letter-spacing:.06em;cursor:pointer;transition:border-color .15s}
+.slot:hover{border-color:var(--ac)}
+.slot span{display:block;margin-top:3px;color:#8faebb;line-height:1.3}
+.gearRow{display:grid;grid-template-columns:86px 1fr 36px;gap:8px;align-items:center;margin-top:6px}
+.gearBar{height:6px;background:#060e18;border:1px solid rgba(143,186,202,.25);border-radius:2px;overflow:hidden}
+.gearBar i{display:block;height:100%;background:linear-gradient(90deg,#d34b55,#ffcc83,#8fe5c1)}
+.slot b{color:#e7f7ff;display:block;font-size:11px}.slot em{font-style:normal;color:var(--ac2)}
+.equip{margin-top:12px;border-top:1px solid rgba(185,228,255,.18);padding-top:10px;font-size:10px;line-height:1.7;letter-spacing:.08em;color:#c5deea}.equip strong{color:var(--ac2)}
+
+#vignette{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(2,8,18,.22) 76%,rgba(2,5,12,.88) 100%);mix-blend-mode:multiply;opacity:.85}
+#frostFx{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;background:radial-gradient(ellipse at center,transparent 55%,rgba(127,212,255,.15) 82%,rgba(204,238,255,.42) 100%)}
+#menu,#ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;z-index:30}
+#ov{background:radial-gradient(ellipse at center,rgba(22,43,66,.84),rgba(3,8,18,.96) 78%);backdrop-filter:blur(8px)}#menu{background:rgba(6,16,27,.84);backdrop-filter:blur(8px)}
+#menu div{background:linear-gradient(145deg,#0a1726f7,#162836f5);border:1px solid rgba(142,216,236,.42);padding:22px 28px;border-radius:6px;line-height:1.9;max-width:480px;text-align:left;box-shadow:0 20px 80px rgba(0,0,0,.85)}
+.menuRow{padding:4px 8px;border-radius:4px;cursor:pointer;transition:background .15s}.menuRow:hover{background:rgba(255,179,71,.18)}
+h1{margin:0 0 6px;font-size:clamp(36px,7vw,76px);letter-spacing:.22em;color:#eaf9ff;text-shadow:0 0 35px rgba(117,183,214,.48)}h2{margin:0 0 8px;color:var(--ac2);letter-spacing:.2em;text-transform:uppercase;font-size:13px}
+button.cta{font:inherit;padding:12px 36px;border:1px solid #ffe0a0;background:linear-gradient(135deg,#ffb347,#ffd37d);color:#15100b;cursor:pointer;margin-top:14px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;border-radius:3px;box-shadow:0 5px 30px rgba(243,165,72,.35);transition:transform .2s,filter .2s}button.cta:hover{transform:translateY(-2px);filter:brightness(1.12)}
+small{opacity:.72;display:block;max-width:640px;margin-top:10px;line-height:1.5}[hidden]{display:none!important}
+@media(max-width:780px){#topCenter{display:none}#topLeft{width:175px}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="topLeft">
+    <div id="stage">FOOTHILL APPROACH</div>
+    <div class="vitalsCard">
+      <div class="b" id="pS"><i></i><span>Stamina <b id="vS">100</b></span></div>
+      <div class="b" id="pW"><i></i><span>Warmth <b id="vW">100</b></span></div>
+      <div class="b" id="pH"><i></i><span>Hydration <b id="vH">100</b></span></div>
+      <div class="b" id="pF"><i></i><span>Food <b id="vF">100</b></span></div>
+    </div>
+  </div>
+
+  <div id="topCenter">
+    <div id="compassWrap"><div id="compassStrip"></div></div>
+    <div id="mission"><b>PRIMARY OBJECTIVE</b><span>Reach the summit before the glacier gives way.</span></div>
+  </div>
+
+  <div id="topRight">
+    <div id="info"></div>
+    <button class="demoPill" id="openDemoBtn">⚡ Demo Locations [M]</button>
+  </div>
+
+  <div id="vignette"></div><div id="frostFx"></div>
+  <div id="sup"></div>
+  <div id="equipHud"></div>
+
+  <div id="climbGauge" hidden>
+    <div class="tit" id="cgTitle">ICE AXE ANCHOR</div>
+    <div class="track"><div class="sweet" id="cgSweet"></div><div class="pin" id="cgPin"></div></div>
+    <div class="hint" id="cgHint">Press [LMB / F] in the green zone to swing axe</div>
+  </div>
+
+  <div id="msg"></div>
+  <div id="x"></div>
+</div>
+
+<!-- Demo Fast-Travel & Showcase Drawer -->
+<div id="demoDrawer" hidden>
+  <div class="demoModal">
+    <div class="demoHead">
+      <h3>⚡ Expedition Demo Showcase & Teleport</h3>
+      <button class="miniBtn" id="closeDemoBtn">[M / ESC] Close</button>
+    </div>
+    <div class="demoSub">Jump directly to any key landmark, steep climbing pitch, walk-in tent, or weather condition to demonstrate the game's systems.</div>
+    <div class="demoGrid" id="demoGrid"></div>
+    <div class="demoControls">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="miniBtn" id="wxClear">☀ Clear Sky</button>
+        <button class="miniBtn" id="wxWind">💨 High Wind</button>
+        <button class="miniBtn" id="wxStorm">❄ Snowstorm</button>
+        <button class="miniBtn" id="timeToggle">🌅 Cycle Dawn/Dusk/Night</button>
+      </div>
+      <button class="miniBtn" id="refillBtn" style="border-color:var(--ok);color:var(--ok)">✨ Full Vitals & Gear</button>
+    </div>
+  </div>
+</div>
+
+<div id="inventory" hidden></div>
+<div id="menu" hidden></div>
+<div id="ov">
+  <h1>SUMMIT</h1>
+  <h2>The Last Ascent — AAA Expedition</h2>
+  <p style="letter-spacing:.12em;color:#d7edf7">Real-scale 1.75m human expedition · Walk-in expedition tents · Technical ice-axe & rope climbing · Physically simulated rivers & glacial currents.</p>
+  <p style="opacity:.78;max-width:640px">Steep rock walls and blue ice seracs cannot simply be walked up. Equip your <b>Ice Axe [F / LMB]</b> to bite into steep cliffs, plant <b>Pitons & Fixed Ropes [G]</b> to belay across sheer pitches, or press <b>[M]</b> at any time to open the <b>Demo Teleport & Weather Showcase</b>.</p>
+  <p><span class="kbd">WASD</span> move · <span class="kbd">Shift</span> sprint · <span class="kbd">Space</span> jump/swim · <span class="kbd">C</span> crouch · <span class="kbd">LMB / F</span> swing axe · <span class="kbd">G</span> piton rope · <span class="kbd">E</span> interact · <span class="kbd">I</span> pack · <span class="kbd">M</span> demo locations</p>
+  <button class="cta" id="go">Begin Ascent</button>
+  <small>Features 2048×2048 real-time directional cascade shadow mapping, normal-mapped PBR micro-surfaces, procedural bark/granite/snow crystals, Snell's-window water refraction & buoyancy currents, and true-scale walk-in tents.</small>
+</div>
+<script>
+(()=>{
+const $=i=>document.getElementById(i),{sin,cos,abs,min,max,floor,exp,pow,PI,hypot,sqrt,atan2,ceil}=Math;
+const cl=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,sm=(a,b,x)=>{x=cl((x-a)/(b-a),0,1);return x*x*(3-2*x)};
+const m3=(a,b,t)=>a.map((v,i)=>lerp(v,b[i],t));
+const LOW=/Mobi|Android/.test(navigator.userAgent)||navigator.deviceMemory<=4;
+let sd=7;const rnd=()=>(sd=sd*16807%2147483647)/2147483647;
+
+// ============================================================================
+// 1. REAL-SCALE WORLD & PROCEDURAL TERRAIN (1 unit = 1.00 meter, player = 1.75m)
+// ============================================================================
+const hs=(x,y)=>{const h=sin(x*127.1+y*311.7)*43758.5453;return h-floor(h)};
+const vn=(x,y)=>{const i=floor(x),j=floor(y),a=x-i,b=y-j,u=a*a*(3-2*a),v=b*b*(3-2*b);return lerp(lerp(hs(i,j),hs(i+1,j),u),lerp(hs(i,j+1),hs(i+1,j+1),u),v)};
+const fbm=(x,y,o)=>{let s=0,a=.5;for(let k=0;k<o;k++){s+=a*vn(x,y);x=x*2.03+17.1;y=y*2.03+9.7;a*=.5}return s};
+const ridge=(x,y,o)=>{let s=0,a=.5,w=1;for(let k=0;k<o;k++){let n=1-abs(2*vn(x,y)-1);n=n*n*w;w=cl(n*2,0,1);s+=n*a;x=x*2.11+11.3;y=y*2.11+23.7;a*=.5}return s};
+
+const ZC=250,BX=0,SP=1400,HS=SP/2,N=LOW?257:513,CS=SP/(N-1);
+const PK=[[-330,60,105,90],[320,120,125,90],[-90,-430,115,110],[210,-390,145,100]];
+
+const hb=(x,z)=>{
+  const r=hypot(x,z),c=215*pow(max(0,1-r/600),1.55)+28*exp(-r*r/1400),m=sm(0,52,c);
+  const wx=fbm(x/180,z/180,3)*34,wz=fbm((x+91)/180,(z-47)/180,3)*34;
+  let h=c+(fbm((x+wx)/150,(z+wz)/150,4)-.5)*46*m+(fbm(x/20,z/20,2)-.5)*4.5*m+(ridge((x+wx*.6)/82,(z+wz*.6)/82,3)-.44)*36*m*sm(52,138,c);
+  const step1=sm(318,294,z)*(1-sm(105,155,abs(x-12*sin(z*.05))))*11.5;
+  const step2=sm(132,110,z)*(1-sm(85,130,abs(x+14*cos(z*.04))))*14.0;
+  const step3=sm(52,34,z)*(1-sm(55,95,abs(x)))*12.0;
+  h+=step1+step2+step3;
+  for(const[a,b,k,s]of PK)h+=k*exp(-((x-a)**2+(z-b)**2)/(2*s*s));
+  return h+45*exp(-((x+130)**2+(z-296)**2)/968);
+};
+const cv=(x,z)=>18*(1-sm(2.4,5.4,abs(z-ZC)))*sm(-100,-85,x)*(1-sm(25,40,x));
+
+const RZ0=290,RZ1=600,rx=z=>-130+(z-280)*.28+22*sin(z/45)+10*sin(z/17),RN=(RZ1-RZ0)/2+1,WY=new Float32Array(RN);
+for(let k=0,w=1e9;k<RN;k++){const z=RZ0+2*k;w=min(w-.035,hb(rx(z),z)-.85);WY[k]=w}
+const WL=WY[RN-1]-.2,LX=rx(RZ1)+8,LZ=640,LR=55;
+const wyAt=z=>{const f=cl((z-RZ0)/2,0,RN-1.001),i=f|0;return lerp(WY[i],WY[i+1],f-i)};
+const wlev=(x,z)=>{
+  if(z>RZ0&&z<RZ1){const hw=4.2+1.1*sin(z*.04);if(abs(x-rx(z))<hw)return wyAt(z)}
+  if(hypot(x-LX,z-LZ)<LR+5)return WL;
+  return -1e9;
+};
+const wflow=(x,z)=>{
+  const wl=wlev(x,z);if(wl<-1e8)return[0,0,0];
+  const depth=max(0,wl-gy(x,z));
+  if(hypot(x-LX,z-LZ)<LR+5){const dx=x-LX,dz=z-LZ,d=hypot(dx,dz)||1;return[-dz/d*.35,dx/d*.35,depth]}
+  const dz=2,dx=rx(z+dz)-rx(z),l=hypot(dx,dz)||1;
+  const slope=max(.05,(wyAt(z-1)-wyAt(z+1))*.5);
+  const spd=cl(2.2+slope*7.5,1.8,6.5);
+  return[dx/l*spd,dz/l*spd,depth];
+};
+
+const G=new Float32Array(N*N);
+for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+  const x=i*CS-HS,z=j*CS-HS;let h=hb(x,z)-cv(x,z);
+  if(z>RZ0-6&&z<RZ1+4){const w=1-sm(3.8,10.5,abs(x-rx(z)));if(w>0)h=min(h,lerp(h,wyAt(z)-1.85,w))}
+  const lr=hypot(x-LX,z-LZ);if(lr<LR+25)h=min(h,WL-2.4+6.2*pow(lr/(LR+10),2));
+  G[j*N+i]=h;
+}
+const gy=(x,z)=>{let u=cl((x+HS)/CS,0,N-1.001),v=cl((z+HS)/CS,0,N-1.001);const i=u|0,j=v|0,a=u-i,b=v-j,k=j*N+i;return lerp(lerp(G[k],G[k+1],a),lerp(G[k+N],G[k+N+1],a),b)};
+const gnorm=(x,z)=>{const e=.6,gx=(gy(x-e,z)-gy(x+e,z))/(2*e),gz=(gy(x,z-e)-gy(x,z+e))/(2*e),l=hypot(gx,1,gz);return[gx/l,1/l,gz/l]};
+
+let P=0,br=0;
+const dyb=z=>hb(BX,z)-.2,sag=()=>1.2*sm(.55,.8,P);
+const deck=(x,z)=>br||abs(x-BX)>3||abs(z-ZC)>5.5?-1e9:dyb(z)-sag();
+
+const CP=[
+  {x:0,z:505,n:'Base Camp',note:'Journal: "Step inside the expedition tent to shelter from wind. Rest, brew tea, and check your ice axe before the headwall."'},
+  {x:0,z:360,n:'Ridge Camp',note:'Journal: "The headwall above is sheer ice and granite. Equip your Ice Axe [F/LMB] and plant Pitons [G] to anchor your climb."'},
+  {x:0,z:170,n:'Glacier Camp',note:'Journal: "Final push. Blue ice pitches ahead require timed axe swings and fixed ropes. Do not rush."'}
+];
+CP.forEach(c=>{
+  c.fire=0;c.cache=1;c.fx=c.x-2.2;c.fz=c.z;c.fy=gy(c.fx,c.fz)+.75;
+  c.tx=c.x+4.2;c.tz=c.z;c.ty=gy(c.tx,c.tz);
+});
+
+const insideTent=(x,z)=>{
+  for(let i=0;i<CP.length;i++){const c=CP[i];if(abs(x-c.tx)<1.75&&abs(z-c.tz)<2.15)return i}
+  return -1;
+};
+const ground=(x,z)=>{
+  let h=max(gy(x,z),deck(x,z));
+  const ti=insideTent(x,z);
+  if(ti>=0)h=max(h,CP[ti].ty+.14);
+  return h;
+};
+
+// ============================================================================
+// 2. GEOMETRY BUILDERS
+// ============================================================================
+let out=[];
+const tri=(a,b,c,k,al)=>{
+  const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+  let n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  const l=hypot(...n)||1;n=[n[0]/l,n[1]/l,n[2]/l];
+  for(const p of[a,b,c])out.push(p[0],p[1],p[2],n[0],n[1],n[2],k[0],k[1],k[2],al);
+};
+const triN=(a,na,b,nb,c,nc,ka,kb,kc,ala,alb,alc)=>{
+  out.push(a[0],a[1],a[2],na[0],na[1],na[2],ka[0],ka[1],ka[2],ala);
+  out.push(b[0],b[1],b[2],nb[0],nb[1],nb[2],kb[0],kb[1],kb[2],alb);
+  out.push(c[0],c[1],c[2],nc[0],nc[1],nc[2],kc[0],kc[1],kc[2],alc);
+};
+const quad=(a,b,c,d,k,al)=>{tri(a,b,c,k,al);tri(a,c,d,k,al)};
+const cone=(x,y,z,r,h,s,k,al)=>{const t=[x,y+h,z];for(let i=0;i<s;i++){const a=i/s*2*PI,b=(i+1)/s*2*PI;tri([x+cos(a)*r,y,z+sin(a)*r],[x+cos(b)*r,y,z+sin(b)*r],t,k,al)}};
+
+const props=[];out=props;
+const box=(x0,y0,z0,x1,y1,z1,k,al=0)=>{const p=[[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];for(const f of[[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[3,2,6,7],[4,5,1,0]])quad(p[f[0]],p[f[1]],p[f[2]],p[f[3]],k,al)};
+const cyl=(x,y,z,r0,r1,h,s,k,al=0)=>{for(let i=0;i<s;i++){const a=i/s*2*PI,b=(i+1)/s*2*PI;quad([x+cos(a)*r0,y,z+sin(a)*r0],[x+cos(b)*r0,y,z+sin(b)*r0],[x+cos(b)*r1,y+h,z+sin(b)*r1],[x+cos(a)*r1,y+h,z+sin(a)*r1],k,al)}};
+
+const tube=(pts,rads,s,k0,k1,al=0)=>{
+  const rings=[];
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i],r=rads[i];
+    const t=i===0?[pts[1][0]-p[0],pts[1][1]-p[1],pts[1][2]-p[2]]:i===pts.length-1?[p[0]-pts[i-1][0],p[1]-pts[i-1][1],p[2]-pts[i-1][2]]:[pts[i+1][0]-pts[i-1][0],pts[i+1][1]-pts[i-1][1],pts[i+1][2]-pts[i-1][2]];
+    const tl=hypot(...t)||1;const T=[t[0]/tl,t[1]/tl,t[2]/tl];
+    const up=abs(T[1])>.9?[1,0,0]:[0,1,0];
+    let B=[T[1]*up[2]-T[2]*up[1],T[2]*up[0]-T[0]*up[2],T[0]*up[1]-T[1]*up[0]];
+    const bl=hypot(...B)||1;B=[B[0]/bl,B[1]/bl,B[2]/bl];
+    const N=[B[1]*T[2]-B[2]*T[1],B[2]*T[0]-B[0]*T[2],B[0]*T[1]-B[1]*T[0]];
+    const ring=[];
+    for(let j=0;j<s;j++){const a=j/s*2*PI,ca=cos(a),sa=sin(a);ring.push([p[0]+(B[0]*ca+N[0]*sa)*r,p[1]+(B[1]*ca+N[1]*sa)*r,p[2]+(B[2]*ca+N[2]*sa)*r])}
+    rings.push(ring);
+  }
+  for(let i=0;i<rings.length-1;i++){
+    const col=m3(k0,k1,i/(rings.length-1));
+    for(let j=0;j<s;j++){const jn=(j+1)%s;quad(rings[i][j],rings[i][jn],rings[i+1][jn],rings[i+1][j],col,al)}
+  }
+};
+
+const ICO_V=[[0,1,0],[.894,.447,0],[.276,.447,.851],[-.724,.447,.526],[-.724,.447,-.526],[.276,.447,-.851],[.724,-.447,.526],[-.276,-.447,.851],[-.894,-.447,0],[-.276,-.447,-.851],[.724,-.447,-.526],[0,-1,0]];
+const ICO_F=[[0,1,2],[0,2,3],[0,3,4],[0,4,5],[0,5,1],[1,6,2],[2,6,7],[2,7,3],[3,7,8],[3,8,4],[4,8,9],[4,9,5],[5,9,10],[5,10,1],[1,10,6],[11,7,6],[11,8,7],[11,9,8],[11,10,9],[11,6,10]];
+const rock=(x,y,z,rx0,ry0,rz0,k,al=0,rough=.38)=>{
+  const ph=x*.13+z*.17;
+  const V=ICO_V.map((v,idx)=>{const n=1+(hs(idx+ph,y*.1)-.5)*rough*2,flat=v[1]<0?.65:1;return[x+v[0]*rx0*n,y+v[1]*ry0*n*flat,z+v[2]*rz0*n]});
+  for(const[a,b,c]of ICO_F){const shade=.85+.28*hs(a+b*3,c+ph);tri(V[a],V[b],V[c],[k[0]*shade,k[1]*shade,k[2]*shade],al)}
+};
+
+const blade=(x,y,z,h,w,a,bend,k0,k1)=>{
+  const ca=cos(a),sa=sin(a),dx=-sa*w,dz=ca*w,h1=h*.52,b1=bend*.32,b2=bend;
+  const p0L=[x-dx,y,z-dz],p0R=[x+dx,y,z+dz],p1L=[x-dx*.62+ca*b1,y+h1,z-dz*.62+sa*b1],p1R=[x+dx*.62+ca*b1,y+h1,z+dz*.62+sa*b1],p2=[x+ca*b2,y+h,z+sa*b2];
+  const n0=[ca*.35,.93,sa*.35],n1=[ca*.55,.83,sa*.55],n2=[ca*.75,.66,sa*.75],km=m3(k0,k1,.55);
+  triN(p0L,n0,p0R,n0,p1R,n1,k0,k0,km,-2,-2,-3.5);
+  triN(p0L,n0,p1R,n1,p1L,n1,k0,km,km,-2,-3.5,-3.5);
+  triN(p1L,n1,p1R,n1,p2,n2,km,km,k1,-3.5,-3.5,-3);
+};
+
+const canopyCluster=(cx,cy,cz,r,leafCol,tipCol,sprays=7)=>{
+  for(let i=0;i<sprays;i++){
+    const yaw=i/sprays*2*PI+rnd()*.7,pitch=(rnd()-.35)*.85,len=r*(.7+rnd()*.45),wid=r*(.55+rnd()*.3);
+    const dx=cos(yaw)*cos(pitch),dy=sin(pitch),dz=sin(yaw)*cos(pitch),px=-sin(yaw)*wid,pz=cos(yaw)*wid;
+    const base=[cx+dx*r*.15,cy+dy*r*.15,cz+dz*r*.15],mid=[cx+dx*len*.6,cy+dy*len*.6+r*.12,cz+dz*len*.6],tip=[cx+dx*len,cy+dy*len-r*.08,cz+dz*len];
+    const sideA=[mid[0]+px,mid[1],mid[2]+pz],sideB=[mid[0]-px,mid[1],mid[2]-pz];
+    const nBase=[dx*.3,.95,dz*.3],nSideA=[dx*.4+px*.5,.7,dz*.4+pz*.5],nSideB=[dx*.4-px*.5,.7,dz*.4-pz*.5],nTip=[dx*.85,.5,dz*.85];
+    const cDark=[leafCol[0]*.76,leafCol[1]*.80,leafCol[2]*.76];
+    triN(base,nBase,sideA,nSideA,tip,nTip,cDark,leafCol,tipCol,-2,-2,-3.5);
+    triN(base,nBase,tip,nTip,sideB,nSideB,cDark,tipCol,leafCol,-2,-3.5,-2);
+  }
+};
+
+const pine=(x,y,z,s,g,snowAmt=0)=>{
+  const h=11.5*s,leanX=(rnd()-.5)*.5*s,leanZ=(rnd()-.5)*.5*s;
+  for(let r=0;r<4;r++){const ra=r*PI*.5+rnd()*.5;tube([[x+cos(ra)*.55*s,y-.1,z+sin(ra)*.55*s],[x+cos(ra)*.20*s,y+.85*s,z+sin(ra)*.20*s]],[.18*s,.08*s],4,[.18,.12,.08],[.24,.16,.11],0)}
+  tube([[x,y-.15,z],[x+leanX*.35,y+h*.35,z+leanZ*.35],[x+leanX*.75,y+h*.7,z+leanZ*.75],[x+leanX,y+h*.96,z+leanZ]],[.34*s,.24*s,.14*s,.04*s],6,[.22,.15,.10],[.30,.21,.14],0);
+  const tiers=7,colDeep=[.045*g,.16*g,.075*g],colMid=[.08*g,.25*g,.11*g],colTip=[.14*g,.34*g,.15*g];
+  for(let t=0;t<tiers;t++){
+    const frac=t/(tiers-1),ty=y+(1.9+frac*8.5)*s,tx=x+leanX*frac,tz=z+leanZ*frac,tierR=(3.1*(1-frac*.76)+.42)*s;
+    const branches=t<5?6:5,rotOff=t*1.15+rnd()*.4;
+    for(let b=0;b<branches;b++){
+      const a=rotOff+b/branches*2*PI+(rnd()-.5)*.22,ca=cos(a),sa=sin(a),blen=tierR*(.85+rnd()*.28),droop=(.55*(1-frac)+.18)*s;
+      const p0=[tx,ty,tz],p1=[tx+ca*blen*.55,ty-droop*.45,tz+sa*blen*.55],p2=[tx+ca*blen,ty-droop+.18*s,tz+sa*blen];
+      const w=.58*blen,px=-sa*w,pz=ca*w,L=[p1[0]+px,p1[1]-.09*s,p1[2]+pz],R=[p1[0]-px,p1[1]-.09*s,p1[2]-pz];
+      const nUp=[ca*.35,.92,sa*.35],nL=[ca*.25-sa*.45,.82,sa*.25+ca*.45],nR=[ca*.25+sa*.45,.82,sa*.25-ca*.45];
+      const matTip=snowAmt>.15?snowAmt:-3.5,cEnd=snowAmt>.15?m3(colTip,[.88,.93,.98],snowAmt*.75):colTip;
+      triN(p0,nUp,L,nL,p2,nUp,colDeep,colMid,cEnd,-2,-2,matTip);
+      triN(p0,nUp,p2,nUp,R,nR,colDeep,cEnd,colMid,-2,matTip,-2);
+      const pSub=[tx+ca*blen*.72,ty+droop*.25,tz+sa*blen*.72];
+      triN(p0,nUp,[p1[0]+px*.6,p1[1]+.14*s,p1[2]+pz*.6],nL,pSub,nUp,colDeep,colMid,cEnd,-2,-2,matTip);
+      triN(p0,nUp,pSub,nUp,[p1[0]-px*.6,p1[1]+.14*s,p1[2]-pz*.6],nR,colDeep,cEnd,colMid,-2,matTip,-2);
+    }
+  }
+  cone(x+leanX,y+h-.6*s,z+leanZ,.4*s,1.4*s,5,snowAmt>.2?m3(colTip,[.9,.95,1],snowAmt*.8):colTip,-2);
+};
+
+const oak=(x,y,z,s,g)=>{
+  const bx=x+(rnd()-.5)*.45*s,bz=z+(rnd()-.5)*.45*s;
+  tube([[x,y-.15,z],[bx,y+2.1*s,bz],[bx+(rnd()-.5)*.35*s,y+4.1*s,bz+(rnd()-.5)*.35*s]],[.42*s,.28*s,.16*s],6,[.22,.16,.11],[.30,.22,.15],0);
+  const cLeaf=[.13*g,.34*g,.10*g],cTip=[.26*g,.48*g,.15*g];
+  for(let b=0;b<4;b++){
+    const a=b*PI*.5+rnd()*.6,ca=cos(a),sa=sin(a),ex=bx+ca*(1.6+rnd()*.6)*s,ey=y+(4.6+rnd()*1.1)*s,ez=bz+sa*(1.6+rnd()*.6)*s;
+    tube([[bx,y+3.2*s,bz],[(bx+ex)*.5,ey-.5*s,(bz+ez)*.5],[ex,ey,ez]],[.15*s,.10*s,.06*s],4,[.26,.19,.13],[.32,.24,.16],0);
+    canopyCluster(ex,ey+.3*s,ez,(1.8+rnd()*.4)*s,cLeaf,cTip,7);
+  }
+  canopyCluster(bx,y+5.6*s,bz,2.0*s,cLeaf,cTip,8);
+};
+
+const birch=(x,y,z,s,g)=>{
+  const lx=(rnd()-.5)*.8*s,lz=(rnd()-.5)*.8*s;
+  tube([[x,y-.1,z],[x+lx*.4,y+3.0*s,z+lz*.4],[x+lx,y+6.2*s,z+lz]],[.22*s,.14*s,.06*s],5,[.78,.78,.75],[.90,.89,.86],0);
+  const cLeaf=[.42*g,.56*g,.15*g],cTip=[.65*g,.72*g,.20*g];
+  canopyCluster(x+lx,y+6.4*s,z+lz,1.7*s,cLeaf,cTip,7);
+  canopyCluster(x+lx*.65+.65*s,y+5.0*s,z+lz*.65+.25*s,1.3*s,cLeaf,cTip,6);
+  canopyCluster(x+lx*.5-.6*s,y+4.3*s,z+lz*.5-.35*s,1.15*s,cLeaf,cTip,5);
+};
+
+const fern=(x,y,z,s,g)=>{
+  const fronds=7+floor(rnd()*4),c0=[.07*g,.22*g,.07*g],c1=[.18*g,.45*g,.13*g];
+  for(let i=0;i<fronds;i++){const a=i/fronds*2*PI+rnd()*.35;blade(x,y-.02,z,(.5+rnd()*.32)*s,.12*s,a,(.8+rnd()*.45)*s,c0,c1)}
+};
+
+// Populate Forests, Bushes, Flowers, Grass & Rocks
+for(let n=0,k=LOW?8500:18500;n<k;n++){
+  const x=(rnd()-.5)*1300,z=(rnd()-.5)*1300,y=gy(x,z);
+  if(y<.5||cv(x,z)>0||wlev(x,z)>-1e8||abs(gy(x+2,z)-y)>2.1||(z>RZ0&&z<RZ1&&abs(x-rx(z))<9)||hypot(x-LX,z-LZ)<LR+13||CP.some(c=>hypot(c.x-x,c.z-z)<16))continue;
+  const f=fbm(x/90,z/90,3),line=1-sm(44,70,y+(rnd()-.5)*10);
+  if(rnd()>line*sm(.28,.55,f)+.025*line)continue;
+  const s=.8+rnd()*.95,g=.75+rnd()*.5,t=rnd(),sn=sm(40,68,y);
+  if(y<20&&t<.38)oak(x,y-.1,z,s,g);
+  else if(y<22&&t<.54)birch(x,y-.1,z,s,g);
+  else pine(x,y-.1,z,s*(1-.3*sn),g,sn);
+}
+
+for(let n=0;n<(LOW?1400:3000);n++){
+  const x=(rnd()-.5)*1300,z=(rnd()-.5)*1300,y=gy(x,z);
+  if(y<.5||y>44||cv(x,z)>0||wlev(x,z)>-1e8||(z>RZ0&&z<RZ1&&abs(x-rx(z))<7)||CP.some(c=>hypot(c.x-x,c.z-z)<10))continue;
+  const g=.75+rnd()*.5,r=.6+rnd()*.7;
+  canopyCluster(x,y+.28*r,z,r,[.09*g,.26*g,.08*g],[.20*g,.42*g,.12*g],5);
+}
+
+const FC=[[1,.88,.22],[.96,.96,.98],[.72,.44,.96],[.96,.42,.52],[.45,.78,1]];
+for(let n=0;n<(LOW?1600:3800);n++){
+  const x=(rnd()-.5)*1300,z=(rnd()-.5)*1300,y=gy(x,z);
+  if(y<.5||y>38||cv(x,z)>0||wlev(x,z)>-1e8||(z>RZ0&&z<RZ1&&abs(x-rx(z))<6))continue;
+  const col=FC[n%FC.length];
+  blade(x,y,z,.30,.028,rnd()*PI,.09,[.1,.28,.09],[.16,.38,.12]);
+  cone(x+.04,y+.26,z,.09,.085,5,col,-3.5);
+}
+
+for(let n=0,k=LOW?8500:26000;n<k;n++){
+  const q=n%3,x=q?(rnd()-.5)*1300:(rnd()-.5)*260,z=q?(rnd()-.5)*1300:490+(rnd()-.5)*240,y=gy(x,z);
+  if(y<.3||y>48||cv(x,z)>0||wlev(x,z)>-1e8||abs(gy(x+2,z)-y)>1.3||(z>RZ0&&z<RZ1&&abs(x-rx(z))<6)||CP.some(c=>hypot(c.tx-x,c.tz-z)<4.5))continue;
+  const g=.78+rnd()*.5,dry=sm(.45,.85,vn(x/35,z/35));
+  const cRoot=[(.09+.10*dry)*g,(.24+.06*dry)*g,.06*g],cTip=[(.22+.26*dry)*g,(.48+.10*dry)*g,(.11+.05*dry)*g];
+  const blades=4+(n&3);
+  for(let b=0;b<blades;b++)blade(x+(rnd()-.5)*.9,y-.03,z+(rnd()-.5)*.9,.5+rnd()*.7,.048+rnd()*.025,rnd()*2*PI,.18+rnd()*.28,cRoot,cTip);
+}
+
+for(let n=0;n<(LOW?120:260);n++){
+  const z=RZ0+rnd()*(RZ1-RZ0),x=rx(z)+(rnd()-.5)*16,y=gy(x,z);const r=.35+rnd()*1.15;
+  rock(x,y,z,r*1.2,r*.75,r,[.34,.36,.37],0,.42);
+}
+for(let n=0;n<(LOW?500:1050);n++){
+  const x=(rnd()-.5)*1100,z=(rnd()-.5)*1100,y=gy(x,z);if(y<20||cv(x,z)>0)continue;
+  const s=.75+rnd()*3.1,g=.34+rnd()*.16,al=sm(65,112,y)*.88;
+  rock(x,y-.1,z,s*(.9+rnd()*.4),s*(.65+rnd()*.45),s*(.9+rnd()*.4),[g,g*.96,g*.94],al,.48);
+}
+
+// Walk-In Expedition Tents
+for(const c of CP){
+  const X=c.tx,Z=c.tz,y=c.ty,hw=1.85,hl=2.25,hWall=.95,hPeak=2.42;
+  const K=[.92,.44,.12],Kdark=[.68,.28,.08],Kfloor=[.24,.18,.13];
+  box(X-hw,y-.2,Z-hl,X+hw,y+.14,Z+hl,Kfloor,0);
+  tube([[X-hw+.06,y+.14,Z-hl+.08],[X,y+hPeak,Z-hl+.08],[X+hw-.06,y+.14,Z-hl+.08]],[.04,.04,.04],5,[.65,.68,.72],[.75,.78,.82],0);
+  tube([[X-hw+.06,y+.14,Z],[X,y+hPeak,Z],[X+hw-.06,y+.14,Z]],[.04,.04,.04],5,[.65,.68,.72],[.75,.78,.82],0);
+  tube([[X-hw+.06,y+.14,Z+hl-.08],[X,y+hPeak,Z+hl-.08],[X+hw-.06,y+.14,Z+hl-.08]],[.04,.04,.04],5,[.65,.68,.72],[.75,.78,.82],0);
+  tube([[X,y+hPeak-.03,Z-hl],[X,y+hPeak-.03,Z+hl]],[.045,.045],5,[.7,.72,.75],[.7,.72,.75],0);
+  quad([X+hw,y+.14,Z-hl],[X+hw,y+.14,Z+hl],[X+hw,y+hWall,Z+hl],[X+hw,y+hWall,Z-hl],Kdark,0);
+  quad([X-hw,y+hWall,Z-hl],[X+hw,y+hWall,Z-hl],[X+hw,y+hPeak,Z],[X-hw,y+hPeak,Z],K,0);
+  quad([X+hw,y+hWall,Z+hl],[X-hw,y+hWall,Z+hl],[X-hw,y+hPeak,Z],[X+hw,y+hPeak,Z],K,0);
+  tri([X-hw,y+hWall,Z-hl],[X-hw,y+hWall,Z+hl],[X-hw,y+hPeak,Z],Kdark,0);
+  tri([X+hw,y+hWall,Z+hl],[X+hw,y+hWall,Z-hl],[X+hw,y+hPeak,Z],Kdark,0);
+  quad([X-hw,y+.14,Z-hl],[X-hw,y+.14,Z-.75],[X-hw,y+hWall,Z-.75],[X-hw,y+hWall,Z-hl],Kdark,0);
+  quad([X-hw,y+.14,Z+.75],[X-hw,y+.14,Z+hl],[X-hw,y+hWall,Z+hl],[X-hw,y+hWall,Z+.75],Kdark,0);
+  cyl(X-hw-.06,y+.14,Z-.78,.09,.09,hWall-.14,6,K,0);
+  cyl(X-hw-.06,y+.14,Z+.78,.09,.09,hWall-.14,6,K,0);
+  for(const sz of[-hl,hl])for(const sx of[-hw,hw])tube([[X+sx,y+hWall,Z+sz],[X+sx*1.45,y-.05,Z+sz*1.32]],[.015,.015],4,[.8,.8,.75],[.8,.8,.75],0);
+  box(X-.5,y+.14,Z+1.05,X+1.55,y+.46,Z+1.95,[.24,.26,.28],0);
+  box(X-.45,y+.46,Z+1.10,X+1.50,y+.62,Z+1.90,[.16,.36,.52],0);
+  box(X+1.15,y+.62,Z+1.20,X+1.48,y+.74,Z+1.80,[.85,.82,.75],0);
+  box(X+.55,y+.14,Z-1.95,X+1.65,y+.82,Z-1.15,[.36,.25,.15],0);
+  box(X+.75,y+.82,Z-1.80,X+1.45,y+.84,Z-1.30,[.86,.82,.72],0);
+  box(X+.80,y+.84,Z-1.72,X+1.15,y+1.06,Z-1.45,[.18,.22,.20],0);
+  box(X+1.05,y+1.06,Z-1.58,X+1.08,y+1.42,Z-1.55,[.7,.7,.72],0);
+  cyl(X,y+hPeak-.28,Z,.03,.03,.25,4,[.2,.2,.2],0);
+  box(X-.11,y+hPeak-.48,Z-.11,X+.11,y+hPeak-.28,Z+.11,[1,.82,.45],2);
+  box(X-1.55,y+.14,Z-1.95,X-.85,y+.58,Z-1.35,[.48,.34,.18],0);
+  box(X-1.45,y+.58,Z-1.85,X-.95,y+.92,Z-1.42,[.32,.42,.26],0);
+  cyl(X-.55,y+.14,Z-1.75,.16,.16,.46,6,[.78,.16,.12],0);
+  const fy=gy(c.fx,c.fz);
+  for(let a=0;a<9;a++)rock(c.fx+cos(a*.698)*.95,fy+.06,c.fz+sin(a*.698)*.95,.25,.18,.22,[.44,.43,.42],0,.4);
+  box(c.fx-.7,fy,c.fz+1.8,c.fx+.7,fy+.4,c.fz+2.2,[.35,.24,.14]);
+  box(c.fx-.7,fy,c.fz-2.2,c.fx+.7,fy+.4,c.fz-1.8,[.35,.24,.14]);
+  cyl(X-hw-.6,y,Z-hl-.4,.05,.05,1.6,5,[.3,.2,.1]);
+  box(X-hw-.75,y+1.6,Z-hl-.55,X-hw-.45,y+1.9,Z-hl-.25,[1,.8,.4],2);
+}
+
+// Abandoned ranger hut
+{
+  const hx=70,hz=445,hy=gy(hx,hz)-.2,K=[.38,.3,.22];
+  box(hx-2.5,hy,hz-2,hx+2.5,hy+.2,hz+2,[.28,.2,.14]);
+  box(hx-2.5,hy,hz-2,hx+2.5,hy+2.9,hz-1.75,K);
+  box(hx-2.5,hy,hz-2,hx-2.25,hy+2.9,hz-.75,K);
+  box(hx-2.5,hy,hz+.75,hx-2.25,hy+2.9,hz+2,K);
+  box(hx+2.25,hy,hz-2,hx+2.5,hy+2.9,hz+2,K);
+  box(hx-2.5,hy,hz+1.75,hx+2.5,hy+2.9,hz+2,K);
+  box(hx-2.7,hy+2.9,hz-2.2,hx+2.7,hy+3.15,hz+2.2,[.3,.2,.12]);
+  box(hx+.8,hy+.2,hz-1.5,hx+1.8,hy+.95,hz-.5,[.4,.28,.16]);
+}
+
+// Cairns, poles, ice seracs, bridge anchors, weather station & summit beacon
+for(let z=450;z>40;z-=70){const x=4+rnd()*3,y=gy(x,z);rock(x,y+.2,z,.52,.32,.48,[.48,.48,.46],0,.4);rock(x,y+.62,z,.36,.24,.34,[.5,.5,.48],0,.4);rock(x,y+.92,z,.22,.16,.21,[.52,.52,.5],0,.4)}
+for(let z=500;z>75;z-=18){
+  const x=rx(cl(z,290,600))+((z%36)?-5:5),y=gy(x,z);if(y<1||cv(x,z)>0)continue;
+  cyl(x,y,z,.055,.04,2.15,5,[.22,.12,.07]);box(x-.08,y+1.35,z-.05,x+.08,y+1.72,z+.05,[.88,.22,.08],2);
+  if(z%54===0)box(x-.55,y+1.35,z-.025,x+.55,y+1.48,z+.025,[.95,.75,.28],2);
+}
+for(let n=0;n<34;n++){
+  const z=470-n*11+(n%3)*2,x=rx(z)+(n%2?8:-8),y=gy(x,z);if(y<1||cv(x,z)>0)continue;
+  for(let k=0;k<3+(n%3);k++)rock(x+(rnd()-.5)*.16,y+.20+k*.32,z+(rnd()-.5)*.16,.34-k*.04,.24-k*.03,.32-k*.04,[.28+.04*rnd(),.3+.04*rnd(),.3+.05*rnd()],0,.45);
+}
+for(let n=0;n<52;n++){const z=280+rnd()*350,x=rx(z)+(rnd()-.5)*20,y=gy(x,z);if(y<1||cv(x,z)>0)continue;const r=.35+rnd()*1.15;cone(x,y,z,r,1.6+rnd()*4.2,5,[.36,.66,.82],1)}
+for(let z=ZC-4;z<ZC+8;z+=2.4){const y=dyb(z);cyl(-3.9,y-.1,z,.06,.05,1.15,5,[.12,.1,.08]);cyl(3.9,y-.1,z,.06,.05,1.15,5,[.12,.1,.08]);box(-4.0,y+.75,z-.08,-3.82,y+.9,z+.08,[.85,.24,.08],2);box(3.82,y+.75,z-.08,4.0,y+.9,z+.08,[.85,.24,.08],2)}
+{const sx=-18,sz=92,sy=gy(sx,sz);cyl(sx,sy,sz,.09,.06,7,5,[.24,.27,.29]);box(sx-.1,sy+6.2,sz,sx+1.3,sy+7.05,sz+.04,[.95,.32,.08],2);cyl(sx+1.2,sy+6.15,sz,.04,.04,.9,4,[.2,.2,.18])}
+
+for(let n=0;n<(LOW?650:1500);n++){
+  const x=(rnd()-.5)*520,z=390+rnd()*190,y=gy(x,z);
+  if(y<1||cv(x,z)>0||wlev(x,z)>-1e8||abs(x-rx(z))<13||CP.some(c=>hypot(c.x-x,c.z-z)<10))continue;
+  const g=.75+rnd()*.5;fern(x,y,z,.75+rnd()*.75,g);
+  if(n%3===0)canopyCluster(x+(rnd()-.5)*.8,y+.35,z+(rnd()-.5)*.8,.55+rnd()*.4,[.08*g,.24*g,.08*g],[.18*g,.40*g,.11*g],4);
+}
+
+// Summit destination
+{const sy=gy(0,0);for(let i=0;i<10;i++){const a=i/10*2*PI;rock(cos(a)*3.2,sy+.28,sin(a)*3.2,.68,.45,.62,[.32,.34,.35],0,.42)}cyl(0,sy,0,.11,.07,8,6,[.22,.23,.24]);box(.05,sy+6.3,0,2.0,sy+7.35,.05,[.95,.32,.08],2);cone(0,sy,0,.22,1.2,5,[1,.55,.12],2)}
+
+const mainN=props.length/10,FR=[];
+for(const c of CP){const s=props.length/10,y=c.fy-.75;cone(c.fx,y,c.fz,.45,1.1,5,[1,.55,.12],2);cone(c.fx,y,c.fz,.28,1.6,5,[1,.85,.3],2);FR.push([s,props.length/10-s])}
+
+const bm=[];out=bm;
+for(let k=0;k<8;k++){const z0=ZC-5.5+k*1.375,z1=z0+1.375,a=dyb(z0),b=dyb(z1),K=[.82,.92,1];quad([BX-3,a,z0],[BX+3,a,z0],[BX+3,b,z1],[BX-3,b,z1],K,1);for(const s of[-3,3])quad([BX+s,a,z0],[BX+s,b,z1],[BX+s,b-.9,z1],[BX+s,a-.9,z0],K,1)}
+for(let k=0;k<6;k++){const z=ZC-4.5+k*1.8+rnd(),a=dyb(z)+.03;quad([BX-3,a,z],[BX+3,a,z],[BX+3,a,z+.2],[BX-3,a,z+.2],[.04,.07,.13],-1)}
+
+const wm=[];out=wm;
+for(let k=0;k<RN-1;k++){
+  const z0=RZ0+2*k,z1=z0+2,a=WY[k],b=WY[k+1],hw0=4.2+1.1*sin(z0*.04),hw1=4.2+1.1*sin(z1*.04),wh=3+cl(((a-b)/2-.20)*3.2,0,1),x0=rx(z0),x1=rx(z1);
+  quad([x0-hw0,a,z0],[x0,a+.04,z0],[x1,b+.04,z1],[x1-hw1,b,z1],[.05,.24,.35],wh);
+  quad([x0,a+.04,z0],[x0+hw0,a,z0],[x1+hw1,b,z1],[x1,b+.04,z1],[.05,.24,.35],wh);
+}
+for(let i=0;i<36;i++){const a=i/36*2*PI,b=(i+1)/36*2*PI;tri([LX,WL,LZ],[LX+cos(a)*(LR+5),WL,LZ+sin(a)*(LR+5)],[LX+cos(b)*(LR+5),WL,LZ+sin(b)*(LR+5)],[.05,.24,.35],3)}
+
+// First-Person Viewmodel Ice Axe
+const axeMesh=[];out=axeMesh;
+tube([[0,-.42,0],[0,-.15,-.02],[0,.14,-.03],[0,.36,-.01]],[.018,.017,.016,.019],6,[.15,.17,.20],[.85,.32,.10],0);
+cyl(0,-.42,0,.022,.021,.22,6,[.12,.12,.14],0);
+box(-.012,.33,-.16,.012,.38,.09,[.75,.80,.86],0);
+tri([-.01,.34,-.16],[.01,.34,-.16],[0,.31,-.25],[.85,.90,.96],0);
+tri([-.01,.38,-.16],[.01,.38,-.16],[0,.31,-.25],[.85,.90,.96],0);
+tube([[0,-.38,0],[.05,-.46,.04],[.08,-.52,.01]],[.007,.007,.007],4,[.9,.55,.15],[.9,.55,.15],0);
+
+const TV=new Float32Array(N*N*10),TI=new Uint32Array((N-1)*(N-1)*6);
+for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+  const x=i*CS-HS,z=j*CS-HS,k=j*N+i,h=G[k];
+  const gx=(G[j*N+max(i-1,0)]-G[j*N+min(i+1,N-1)])/(2*CS),gz=(G[max(j-1,0)*N+i]-G[min(j+1,N-1)*N+i])/(2*CS);
+  const l=hypot(gx,1,gz),ny=1/l,s=1-ny,v=vn(x/6,z/6),dv=vn(x/35,z/35),strata=sin(h*.85+fbm(x/28,z/28,2)*5);
+  const grass=m3([.11+.08*v,.29+.11*v,.09],[.44,.42,.17],sm(.48,.82,dv)*.72);
+  const rk=(.72+.52*v)*(.88+.14*strata),rockCol=[.42*rk,.39*rk,.38*rk];
+  let c=m3(grass,rockCol,max(sm(18,48,h),sm(.26,.46,s))),a=sm(68,112,h+(vn(x/40,z/40)-.5)*30)*(1-sm(.35,.6,s));
+  c=m3(c,[.46,.72,.94],sm(.36,.55,s)*sm(32,75,h));
+  c=m3(c,[.52,.74,.92],sm(78,95,h)*(1-sm(.1,.25,s))*(1-sm(150,170,h)));
+  if(cv(x,z)>.5){c=[.32,.58,.80];a=0}
+  const dr=abs(x-rx(z));if(z>RZ0-4&&z<RZ1+4&&dr<9){c=m3(c,[.42,.40,.35],.65*(1-sm(2,9,dr)));a*=sm(4,9,dr)}
+  const lr=hypot(x-LX,z-LZ);if(lr<LR+12){c=m3(c,[.65,.60,.46],.75*(1-sm(LR-10,LR+12,lr)));a=0}
+  TV.set([x,h,z,gx*ny,ny,gz*ny,...c,a],k*10);
+}
+{let n=0;for(let j=0;j<N-1;j++)for(let i=0;i<N-1;i++){const k=j*N+i;TI.set([k,k+N,k+1,k+1,k+N,k+N+1],n);n+=6}}
+
+// ============================================================================
+// 3. WEBGL2 PIPELINE
+// ============================================================================
+const cv0=$('c'),gl=cv0.getContext('webgl2',{antialias:!LOW});
+if(!gl){$('ov').innerHTML='<h2>This game needs WebGL2</h2><p>Please try a current Chrome, Edge, Firefox or Safari.</p>';throw Error('no webgl2')}
+const prog=(vs,fs)=>{const p=gl.createProgram();for(const[t,s]of[[gl.VERTEX_SHADER,vs],[gl.FRAGMENT_SHADER,fs]]){const h=gl.createShader(t);gl.shaderSource(h,'#version 300 es\nprecision highp float;'+s);gl.compileShader(h);if(!gl.getShaderParameter(h,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(h));gl.attachShader(p,h)}gl.linkProgram(p);return p};
+
+const SM_RES=LOW?1024:2048;
+const smTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,smTex);
+gl.texImage2D(gl.TEXTURE_2D,0,gl.DEPTH_COMPONENT24,SM_RES,SM_RES,0,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,null);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+const smFbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,smFbo);
+gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,smTex,0);
+gl.drawBuffers([gl.NONE]);gl.readBuffer(gl.NONE);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+const pShad=prog(`layout(location=0)in vec3 p;layout(location=2)in vec4 c;
+uniform mat4 uLVP;uniform vec3 uO;uniform float uT,uYaw,uSc,uWind;
+void main(){vec3 q=p*uSc;float cy=cos(uYaw),sy=sin(uYaw);q.xz=vec2(cy*q.x-sy*q.z,sy*q.x+cy*q.z);vec3 w=q+uO;
+if(c.a<-2.5&&c.a>-3.8){float flex=c.a<-3.2?.38:1.0;w.xz+=sin(uT*1.9+w.x*.32+w.z*.24)*(.11+.16*uWind)*flex*vec2(1.,.65);}gl_Position=uLVP*vec4(w,1);}`,`void main(){}`);
+
+const pS=prog(`layout(location=0)in vec3 p;layout(location=1)in vec3 n;layout(location=2)in vec4 c;
+uniform mat4 uVP,uLVP;uniform vec3 uO,uCam;uniform float uT,uYaw,uSc,uWind;
+out vec3 vW,vN;out vec4 vC,vLP;
+void main(){
+  vec3 q=p;if(c.a<-3.8)q.y+=sin(uT*10.+uO.x)*.3*abs(q.z);q*=uSc;
+  float cy=cos(uYaw),sy=sin(uYaw);q.xz=vec2(cy*q.x-sy*q.z,sy*q.x+cy*q.z);
+  vW=q+uO;vN=vec3(cy*n.x-sy*n.z,n.y,sy*n.x+cy*n.z);
+  if(c.a<-2.5&&c.a>-3.8){float flex=c.a<-3.2?.38:1.0;float gust=sin(uT*1.9+vW.x*.32+vW.z*.24)+.45*sin(uT*4.1+vW.x*.85-vW.z*.65);vW.xz+=gust*(.11+.16*uWind)*flex*vec2(1.,.65);vec2 pd=vW.xz-uCam.xz;float pl=length(pd);if(pl<1.8&&abs(vW.y-uCam.y)<2.4)vW.xz+=normalize(pd+1e-4)*(1.8-pl)*.28*flex;}
+  vC=c;vLP=uLVP*vec4(vW,1);gl_Position=uVP*vec4(vW,1);
+}`,
+`in vec3 vW,vN;in vec4 vC,vLP;out vec4 o;
+uniform vec3 uCam,uSun,uSunC,uAmb,uHor,uFire;
+uniform float uFog,uMelt,uFlick,uCrack,uFireI,uT,uSmRes;
+uniform sampler2D uShadow;
+float hash21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash21(i),hash21(i+vec2(1,0)),f.x),mix(hash21(i+vec2(0,1)),hash21(i+vec2(1,1)),f.x),f.y);}
+float fbm3(vec2 p){return vnoise(p)*.55+vnoise(p*2.13+13.7)*.30+vnoise(p*4.31-7.3)*.15;}
+float calcShadow(vec4 lp, float ndl){
+  vec3 proj=lp.xyz/lp.w*.5+.5;if(proj.z>1.||proj.x<0.||proj.x>1.||proj.y<0.||proj.y>1.)return 1.;
+  float edge=smoothstep(0.,.08,proj.x)*smoothstep(1.,.92,proj.x)*smoothstep(0.,.08,proj.y)*smoothstep(1.,.92,proj.y);
+  float bias=max(.0016*(1.-ndl),.00045),texel=1./uSmRes,sh=0.;
+  for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++){float d=texture(uShadow,proj.xy+vec2(x,y)*texel).r;sh+=(proj.z-bias>d)?0.:1.;}
+  return mix(1.,sh/9.,edge);
+}
+void main(){
+  vec3 N=normalize(vN);if(dot(N,uCam-vW)<0.)N=-N;vec3 b=vC.rgb;
+  float a=vC.a,e=0.,ws=0.,botanical=0.,snowMask=0.,alpha=1.;
+  float dist=length(vW-uCam),detailFade=1.-smoothstep(18.,145.,dist);
+  float fMicro=fbm3(vW.xz*1.9+vW.y*.7),fFine=vnoise(vW.xz*15.+vW.y*10.);
+  if(a<-1.5){botanical=step(-3.8,a);float vein=vnoise(vW.xz*18.+vW.y*12.);b*=0.86+0.28*mix(fMicro,vein,detailFade*.7);N=normalize(N+vec3(vein-.5,.2,fMicro-.5)*0.22*detailFade);}
+  else if(a<-.5){b=mix(vec3(.82,.91,1.),b,uCrack);b*=0.9+0.2*fMicro;}
+  else if(a>2.9){
+    float wh=a-3.;vec2 flowUv=vW.xz+vec2(0.,-uT*(1.4+wh*2.2));
+    float w1=sin(flowUv.x*1.4+vnoise(flowUv*.7)*3.5)*cos(flowUv.y*1.6),w2=vnoise(flowUv*4.2+vec2(uT*1.2,-uT*2.6))-.5,w3=vnoise(vW.xz*11.-vec2(uT*2.1,uT*3.4))-.5;
+    N=normalize(N+vec3(w1*.15+w2*.24+w3*.12,0.,w2*.24-w1*.14+w3*.12));
+    float foam=clamp(wh*.82+wh*(sin(vW.y*4.5+uT*10.)*.5+.5)*.45+smoothstep(.28,.62,w2)*wh*.45,0.,1.);
+    b=mix(mix(vec3(.02,.15,.24),vec3(.08,.34,.42),clamp(.45+.2*w1,0.,1.)),vec3(.93,.98,1.),foam);alpha=mix(.84,.98,foam);ws=1.;
+  }else if(a>1.5){e=1.;}
+  else{
+    float rockiness=1.-smoothstep(.45,.88,N.y),strata=sin(vW.y*2.4+fbm3(vW.xz*.25)*6.)*.5+.5;
+    float barkGrain=vnoise(vec2(atan(vW.z,vW.x)*6.+vW.x*4.,vW.y*8.)),grain=mix(fMicro,mix(strata,barkGrain,step(.85,1.-N.y)*.5),rockiness);
+    b*=0.80+0.40*mix(grain,fFine,detailFade*.45);
+    vec3 bump=vec3(fFine-.5,(grain-.5)*.5,vnoise(vW.zx*13.-vW.y*7.)-.5);N=normalize(N+bump*(.18+.22*rockiness)*detailFade);
+    snowMask=clamp(a-uMelt*.45+(fMicro-.5)*.22,0.,1.);b=mix(b,vec3(.91,.95,1.)*(.92+.14*fMicro),snowMask);
+  }
+  float ndl=max(dot(N,uSun),0.),sh=e>.5?1.:calcShadow(vLP,ndl),hemi=.5+.5*N.y;
+  vec3 l=b*(mix(uAmb*.65,uAmb*1.25,hemi)+uSunC*ndl*sh),vd=normalize(uCam-vW);
+  if(botanical>.5){l+=b*uSunC*pow(max(dot(-vd,uSun),0.),3.)*(.35+.65*(1.-ndl))*sh*.55;}
+  if(snowMask>.35&&detailFade>.05){l+=uSunC*pow(max(0.,hash21(floor(vW.xz*32.+vW.y*16.))),28.)*snowMask*ndl*sh*detailFade*1.8;}
+  vec3 fd=uFire-vW;float fd2=dot(fd,fd);if(uFireI>.01&&fd2<900.)l+=b*vec3(1.,.48,.16)*uFireI*max(dot(N,normalize(fd)),0.)/(1.+fd2*.032);
+  if(e>.5)l=b*(1.35+uFlick);
+  if(ws>.5){float fr=pow(1.-max(dot(N,vd),0.),3.5);vec3 refl=mix(uHor*1.15,uSunC*1.3,pow(max(dot(reflect(-vd,N),uSun),0.),12.)*sh);l=mix(l,refl,fr*.74)+uSunC*pow(max(dot(reflect(-vd,N),uSun),0.),110.)*1.1*sh;}
+  float f=1.-exp(-dist*uFog);vec3 col=mix(l,mix(uHor,uHor*1.08+uSunC*.12,pow(max(dot(-vd,uSun),0.),4.)),f);
+  col=(col*(2.51*col+.03))/(col*(2.43*col+.59)+.14);o=vec4(pow(clamp(col,0.,1.),vec3(.4545)),alpha);
+}`);
+
+const pK=prog(`out vec2 q;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));q=p*2.-1.;gl_Position=vec4(q,1,1);}`,
+`in vec2 q;out vec4 o;uniform vec3 uR,uU,uF,uSun,uZen,uHor,uSunC;uniform float uAsp,uTan,uNight,uT,uCl;
+float nz(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);vec2 k=vec2(127.1,311.7);float a=fract(sin(dot(i,k))*43758.5),b=fract(sin(dot(i+vec2(1,0),k))*43758.5),c=fract(sin(dot(i+vec2(0,1),k))*43758.5),d=fract(sin(dot(i+vec2(1,1),k))*43758.5);return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}
+float fbmC(vec2 p){float s=0.,a=.5;for(int i=0;i<5;i++){s+=a*nz(p);p=p*2.07+vec2(13.1,7.7);a*=.5;}return s;}
+float h(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5);}
+void main(){
+  vec3 d=normalize(uF+uR*q.x*uAsp*uTan+uU*q.y*uTan),c=mix(uHor,uZen,pow(clamp(d.y,0.,1.),.48));float s=max(dot(d,uSun),0.);
+  c+=uSunC*(pow(s,750.)*3.5+pow(s,14.)*.35+pow(s,3.)*.08)+step(.9972,h(floor(d*240.)))*uNight*smoothstep(.02,.35,d.y)*1.2+vec3(.78,.86,1.)*pow(max(dot(d,-uSun),0.),950.)*3.2*uNight;
+  if(d.y>.005){vec2 uv=d.xz/(d.y+.18)*2.0+vec2(uT*.014,uT*.006);float cn=fbmC(uv),cn2=fbmC(uv*1.8-vec2(uT*.01,0.));float dens=smoothstep(.54-uCl*.24,.86-uCl*.18,cn*.7+cn2*.3)*smoothstep(0.,.22,d.y);float rim=pow(s,6.)*(1.-dens*.5);c=mix(c,mix(uHor*.85+.12,uSunC*1.15+.1,pow(s,2.)*.65+rim*.5)*(.25+.75*(1.-uNight)),dens*.88);}
+  float shaft=sin(atan(d.y,dot(d.xz,normalize(uSun.xz+1e-4)))*14.+uT*.2)*.5+.5;c+=uSunC*pow(s,8.)*shaft*(1.-abs(d.y))*.09*(1.-uNight);
+  c=(c*(2.51*c+.03))/(c*(2.43*c+.59)+.14);o=vec4(pow(clamp(c,0.,1.),vec3(.4545)),1.);
+}`);
+
+const pN=prog(`uniform mat4 uVP;uniform vec3 uCam;uniform float uT,uWind,uCnt;out float vA;float h(float n){return fract(sin(n*12.9898)*43758.5453);}
+void main(){float i=float(gl_VertexID);vec3 b=vec3(h(i),h(i+.37),h(i+.71))*70.;b.y-=uT*(1.8+3.2*uWind);b.x+=uT*uWind*9.+sin(uT*1.5+i)*.6;vec3 w=uCam+mod(b-uCam+35.,70.)-35.;
+gl_Position=uVP*vec4(w,1);gl_PointSize=clamp(190./gl_Position.w,1.,5.);vA=1.-length(w-uCam)/40.;if(i>=uCnt)gl_Position=vec4(2,2,2,1);}`,
+`in float vA;out vec4 o;uniform vec3 uHor;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;float soft=1.-smoothstep(.15,.5,d);o=vec4(mix(uHor,vec3(1.),.65),clamp(vA,0.,1.)*soft*.85);}`);
+
+const mk=(arr,idx)=>{const v=gl.createVertexArray();gl.bindVertexArray(v);const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,arr instanceof Float32Array?arr:new Float32Array(arr),gl.STATIC_DRAW);
+[[0,3,0],[1,3,12],[2,4,24]].forEach(([l,n,o])=>{gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,n,gl.FLOAT,false,40,o)});
+if(idx){const e=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,e);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW)}gl.bindVertexArray(null);return v};
+const vT=mk(TV,TI),vP=mk(props),vB=mk(bm),bmN=bm.length/10,vW=mk(wm),wmN=wm.length/10,vAxe=mk(axeMesh),axeN=axeMesh.length/10;
+
+const dynVao=gl.createVertexArray(),dynBuf=gl.createBuffer();
+gl.bindVertexArray(dynVao);gl.bindBuffer(gl.ARRAY_BUFFER,dynBuf);
+[[0,3,0],[1,3,12],[2,4,24]].forEach(([l,n,o])=>{gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,n,gl.FLOAT,false,40,o)});
+gl.bindVertexArray(null);
+let dynVerts=new Float32Array(0),dynCount=0;
+const ANCHORS=[];
+const rebuildRopes=()=>{
+  const o=[];out=o;
+  for(const a of ANCHORS){
+    cyl(a.x,a.y-.1,a.z,.03,.03,.32,5,[.75,.8,.85],0);
+    box(a.x-.07,a.y+.18,a.z-.07,a.x+.07,a.y+.26,a.z+.07,[1,.5,.1],2);
+    const pts=[],rads=[];
+    for(let i=0;i<=8;i++){const t=i/8;pts.push([lerp(a.x,a.tx,t),lerp(a.y+.2,a.ty+.15,t)-sin(t*PI)*.25,lerp(a.z,a.tz,t)]);rads.push(.024)}
+    tube(pts,rads,5,[.92,.35,.12],[.96,.62,.16],0);
+  }
+  dynVerts=new Float32Array(o);dynCount=o.length/10;
+  gl.bindBuffer(gl.ARRAY_BUFFER,dynBuf);gl.bufferData(gl.ARRAY_BUFFER,dynVerts,gl.DYNAMIC_DRAW);
+};
+
+// Wildlife
+const mkA=(k,k2)=>{const o=[];out=o;box(-.7,.8,-.25,.7,1.5,.25,k,-2);box(.6,1.2,-.12,1.2,1.9,.12,k,-2);box(1.1,1.65,-.14,1.5,1.9,.14,k2,-2);for(const[x,z]of[[-.55,-.2],[-.55,.12],[.4,-.2],[.4,.12]])box(x,0,z,x+.1,.85,z+.1,k2,-2);for(const z of[-.18,.1])box(1.2,1.9,z,1.3,2.3,z+.08,[.8,.75,.6],-2);return o};
+const aD=mkA([.5,.33,.2],[.3,.2,.12]),aG=mkA([.92,.92,.88],[.35,.33,.3]),AV=[[mk(aD),aD.length/10,1],[mk(aG),aG.length/10,.7]];
+const bdm=[];out=bdm;tri([.4,0,0],[-.3,0,.12],[-.3,0,-.12],[.15,.15,.15],-4);tri([0,0,0],[-.25,0,1.1],[.2,0,0],[.2,.2,.2],-4);tri([0,0,0],[-.25,0,-1.1],[.2,0,0],[.2,.2,.2],-4);
+const vBd=mk(bdm),nBd=bdm.length/10,AN=[],BD=[];
+const spw=(t,n,y0,y1,z0,z1,sp)=>{for(let i=0;i<n;i++){let x,z;for(let k=0;k<60;k++){x=(rnd()-.5)*1100;z=z0+rnd()*(z1-z0);const y=gy(x,z);if(y>y0&&y<y1&&wlev(x,z)<-1e8&&cv(x,z)<=0)break}AN.push({v:AV[t][0],n:AV[t][1],sc:AV[t][2]*(.9+rnd()*.2),x,z,tx:x,tz:z,y0,y1,sp,yaw:rnd()*6,w:rnd()*4})}};
+spw(0,16,2,36,320,690,1.6);spw(1,10,45,125,60,330,1.4);
+for(let f=0;f<4;f++){const cx=(rnd()-.5)*700,cz=-100+rnd()*650;for(let i=0;i<5;i++)BD.push({cx,cz,r:25+rnd()*20,ph:rnd()*6.28,sp:.25+rnd()*.15,h:35+rnd()*25})}
+const aUp=(a,dt)=>{const d=hypot(S.x-a.x,S.z-a.z);let sp=a.sp;if(d<14){const l=d||1;a.tx=a.x+(a.x-S.x)/l*30;a.tz=a.z+(a.z-S.z)/l*30;a.w=0;sp*=2.6}
+if(a.w>0){a.w-=dt;return}const dx=a.tx-a.x,dz=a.tz-a.z,l=hypot(dx,dz);if(l<1){a.w=2+rnd()*5;const an=rnd()*6.28,r=8+rnd()*18;a.tx=a.x+cos(an)*r;a.tz=a.z+sin(an)*r;return}
+const nx=a.x+dx/l*sp*dt,nz=a.z+dz/l*sp*dt,y=gy(nx,nz);if(y<a.y0||y>a.y1||wlev(nx,nz)>-1e8||cv(nx,nz)>0||abs(nx)>650||abs(nz)>650){a.w=1+rnd()*2;a.tx=a.x;a.tz=a.z;return}
+a.x=nx;a.z=nz;const t=atan2(dz,dx);a.yaw+=atan2(sin(t-a.yaw),cos(t-a.yaw))*min(1,dt*6)};
+const POI=[
+  {x:rx(324),z:324,m:'A fast alpine river cuts through the valley. Strong currents will sweep you downstream if you wade deep! Press E at the shore to drink.'},
+  {x:LX,z:LZ-45,m:'A glacial tarn lake. Cold, clear meltwater with gentle surface currents.'},
+  {x:70,z:445,m:'An abandoned ranger cabin. Step inside through the doorway to find supplies.'},
+  {x:0,z:318,m:'THE HEADWALL: Sheer 55° granite & ice pitch ahead! Hold [LMB / F] to swing your Ice Axe into the slope, or press [G] to anchor a Fixed Rope.'},
+  {x:0,z:132,m:'GLACIER ICEFALL: Blue ice wall ahead. Time your Ice Axe strikes in the green sweet-spot to haul yourself up!'}
+];
+const set=(p,o)=>{gl.useProgram(p);for(const k in o){const v=o[k],l=gl.getUniformLocation(p,k);if(!l)continue;if(v.length===16)gl.uniformMatrix4fv(l,false,v);else if(v.length===3)gl.uniform3fv(l,v);else gl.uniform1f(l,v)}};
+const mul=(a,b)=>{const o=new Float32Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+j]*b[i*4+k];o[i*4+j]=s}return o};
+
+// ============================================================================
+// 4. GAME STATE, DEMO FAST-TRAVEL LOCATIONS & INTERACTIVE UI
+// ============================================================================
+const S={
+  x:0,z:515,y:0,vy:0,gr:1,yaw:0,pit:.08,
+  eyeH:1.65,crouch:0,
+  st:100,wa:100,hy:100,fd:100,food:4,water:4,fuel:3,
+  bob:0,crit:0,prevZ:515,route:'-',uf:0,uw:0,
+  axeSwing:0,axeCooldown:0,anchored:0,anchorTimer:0,onSteep:0,slopeDeg:0,
+  inv:{ration:3,thermos:2,medkit:1,repair:2,piton:4,flare:1},
+  eq:{boots:100,coat:100,axe:100,rope:100},
+  scrapes:0,wet:0,stage:0
+};
+const STAGES=[
+  ['FOOTHILL APPROACH','Follow the cairns through the old-growth forest. Step inside Base Camp tent to prepare.'],
+  ['HEADWALL & TREE LINE','Steep granite cliffs begin. Swing your Ice Axe [LMB/F] and plant Pitons [G] to ascend.'],
+  ['GLACIER TRAVERSE','Cross the crevasse and climb the blue icefall using timed axe placements.'],
+  ['KNIFE-EDGE RIDGE','Exposed 60° ridge pitches. Keep warm and maintain your gear.'],
+  ['SUMMIT','Plant the marker at 4,550m and face the sunrise.']
+];
+const stageAt=()=>S.y<32?0:S.y<76?1:S.y<140?2:S.y<195?3:4;
+const ITEM_DEFS={ration:['Ration','restores hunger +34'],thermos:['Thermos','restores hydration +38'],medkit:['Med kit','binds injuries and restores warmth +12'],repair:['Repair kit','repairs worn gear +26'],piton:['Piton & Rope','press [G] on steep slopes to anchor a climbable fixed rope'],flare:['Flare','marks your position in a storm']};
+const ITEMS=[
+  {x:70,z:445,id:'repair',name:'ranger repair kit (inside hut)'},
+  {x:0,z:356,id:'piton',name:'bundle of forged pitons'},
+  {x:rx(330)+5,z:330,id:'thermos',name:'insulated steel thermos'},
+  {x:-18,z:92,id:'flare',name:'high-altitude flare'},
+  {x:4.2,z:505,id:'ration',name:'expedition ration pack (inside tent)'}
+];
+
+// Demo Fast-Travel Showcase Landmarks
+const DEMO_LOCS=[
+  {tag:'CAMP 0 · START',name:'Base Camp & Walk-In Tent',desc:'Foothill pine forest, campfire ring & furnished walk-in expedition tent.',x:0,z:508,yaw:0,camp:0},
+  {tag:'HYDRODYNAMICS',name:'Alpine River & Waterfall',desc:'Swift glacial current with downstream drift, foam & drinking water.',x:rx(328)+6,z:328,yaw:1.4,camp:0},
+  {tag:'GLACIAL TARN',name:'Quiet Mountain Lake',desc:'Mirror-like alpine lake with Fresnel sky reflections & swimming buoyancy.',x:LX+12,z:LZ-48,yaw:-.4,camp:0},
+  {tag:'LANDMARK',name:'Abandoned Ranger Hut',desc:'Secluded timber cabin in the eastern woods with hidden repair gear.',x:64,z:445,yaw:-1.57,camp:0},
+  {tag:'CAMP 1 · CLIMBING',name:'Ridge Camp & Headwall',desc:'Staging tent right below the 55° granite cliff—test Ice Axe & Pitons!',x:0,z:362,yaw:0,camp:1},
+  {tag:'HAZARD · SHORTCUT',name:'Crevasse Snow Bridge',desc:'Fragile ice bridge spanning a deep glacial crevasse.',x:0,z:258,yaw:0,camp:1},
+  {tag:'CAMP 2 · HIGH ALT',name:'Glacier Camp & Icefall',desc:'Blue ice seracs, weather station & steep upper glacier traverse.',x:0,z:172,yaw:0,camp:2},
+  {tag:'PEAK · 4,550M',name:'Summit Cairn & Beacon',desc:'Final ridge overlook & summit flagpole at the top of the massif.',x:0,z:14,yaw:0,camp:2}
+];
+
+const teleportTo=(loc)=>{
+  S.x=loc.x;S.z=loc.z;S.y=ground(S.x,S.z);S.vy=0;S.gr=1;S.yaw=loc.yaw;S.pit=.04;
+  S.st=max(S.st,80);S.wa=max(S.wa,75);S.hy=max(S.hy,75);S.fd=max(S.fd,75);S.crit=0;
+  lastCamp=loc.camp;
+  closeDemo();
+  say(`Demo Warped: ${loc.name} (${Math.round(2400+S.y*10)}m)`,4.5);
+};
+
+const openDemo=()=>{
+  if(document.exitPointerLock)document.exitPointerLock();
+  $('inventory').hidden=true;
+  const grid=$('demoGrid');
+  grid.innerHTML=DEMO_LOCS.map((l,idx)=>`<div class="locCard" data-idx="${idx}"><span class="tag">${l.tag}</span><b>${l.name}</b><span>${l.desc}</span></div>`).join('');
+  grid.querySelectorAll('.locCard').forEach(el=>el.onclick=()=>teleportTo(DEMO_LOCS[+el.dataset.idx]));
+  $('demoDrawer').hidden=false;
+};
+const closeDemo=()=>{
+  $('demoDrawer').hidden=true;
+  if(run&&!ended&&menu<0){try{const p=cv0.requestPointerLock();p&&p.catch&&p.catch(()=>{})}catch(e){}}
+};
+$('openDemoBtn').onclick=openDemo;
+$('closeDemoBtn').onclick=closeDemo;
+$('wxClear').onclick=()=>{W.cur=0;wl=0;fw=0;WX.severity=0;say('Weather set to Clear Alpine Sky.',3)};
+$('wxWind').onclick=()=>{W.cur=1;wl=.6;fw=.35;WX.severity=.5;say('Weather set to High Ridge Winds.',3)};
+$('wxStorm').onclick=()=>{W.cur=2;wl=1;fw=1;WX.severity=.95;say('Weather set to Heavy Snowstorm!',3)};
+$('timeToggle').onclick=()=>{hr=(hr+6)%24;say(`Time advanced to ${String(floor(hr)).padStart(2,'0')}:00.`,2.5)};
+$('refillBtn').onclick=()=>{S.st=100;S.wa=100;S.hy=100;S.fd=100;S.inv.piton=max(S.inv.piton,5);for(const k of Object.keys(S.eq))S.eq[k]=100;say('All vitals, pitons & gear restored to 100%!',3)};
+
+const WX={severity:0,front:0,gust:0,clock:48,next:1,alert:0};
+const eqName={boots:'Crampon Boots',coat:'Alpine Shell',axe:'Ice Axe',rope:'Dynamic Rope'};
+
+const invOpen=()=>{$('inventory').hidden=false;drawInventory()};
+const invClose=()=>{$('inventory').hidden=true};
+const drawInventory=()=>{
+  const q=S.inv,e=S.eq;
+  let html='<h3>Expedition Pack <span style="float:right;color:#91b9c7;cursor:pointer" id="invCloseX">[I] close</span></h3><div class="grid">';
+  let idx=1;
+  for(const k of Object.keys(ITEM_DEFS))html+=`<div class="slot" data-k="${k}"><b>[${idx++}] ${ITEM_DEFS[k][0]} <em>x${q[k]}</em></b><span>${ITEM_DEFS[k][1]}</span></div>`;
+  html+='</div><div class="equip"><strong>TECHNICAL GEAR CONDITION</strong>'+Object.entries(e).map(([k,v])=>`<div class="gearRow"><span>${eqName[k]}</span><div class="gearBar"><i style="width:${v}%"></i></div><span>${Math.round(v)}%</span></div>`).join('')+'</div><div style="margin-top:10px;color:#9ebcc8;font-size:10px">Click an item or press 1–6 to use</div>';
+  $('inventory').innerHTML=html;
+  $('invCloseX').onclick=invClose;
+  $('inventory').querySelectorAll('.slot').forEach(el=>el.onclick=()=>useItem(el.dataset.k));
+};
+const useItem=k=>{
+  if(S.inv[k]<1){say('Your pack has none left.',2);return}
+  if(k==='ration'){S.inv[k]--;S.fd=min(100,S.fd+34);S.st=min(100,S.st+10);say('You eat a high-calorie expedition ration.',3)}
+  else if(k==='thermos'){S.inv[k]--;S.hy=min(100,S.hy+38);S.wa=min(100,S.wa+10);say('Hot spiced tea warms your core.',3)}
+  else if(k==='medkit'){S.inv[k]--;S.scrapes=0;S.wa=min(100,S.wa+12);say('You dress bruises and frostnip.',3)}
+  else if(k==='repair'){const worn=Object.keys(S.eq).sort((a,b)=>S.eq[a]-S.eq[b])[0];S.inv[k]--;S.eq[worn]=min(100,S.eq[worn]+26);say('You sharpen and tighten your '+eqName[worn].toLowerCase()+'.',3)}
+  else if(k==='piton'){plantPiton();return}
+  else if(k==='flare'){S.inv[k]--;WX.alert=8;say('Magnesium flare ignites—cutting through the whiteout.',4)}
+  drawInventory();
+};
+const pickup=()=>{
+  const i=ITEMS.findIndex(a=>hypot(a.x-S.x,a.z-S.z)<4.5);
+  if(i<0)return false;
+  const a=ITEMS[i];S.inv[a.id]++;ITEMS.splice(i,1);
+  say('Collected: '+a.name+' (Press I for pack).',4);return true;
+};
+
+const swingIceAxe=()=>{
+  if(S.axeCooldown>0)return;
+  if(S.eq.axe<=0){say('Your ice axe pick is blunted! Repair it [I -> 4] or at camp.',3);return}
+  if(S.st<6){say('Too exhausted to swing your ice axe! Rest or catch your breath.',2.5);return}
+  S.axeSwing=1.0;S.axeCooldown=.55;S.st=max(0,S.st-5.5);
+  const phase=(sin(tt*4.8)+1)*.5,skillWin=.28+.14*(S.eq.axe/100),inSweet=abs(phase-.5)<skillWin*.5;
+  if(S.onSteep||S.slopeDeg>32){
+    if(inSweet){
+      S.anchored=1;S.anchorTimer=2.4;S.eq.axe=max(0,S.eq.axe-1.1);
+      const fx=sin(S.yaw)*1.35,fz=-cos(S.yaw)*1.35,nx=S.x+fx,nz=S.z+fz,ng=ground(nx,nz);
+      if(ng-S.y<2.8){S.x=nx;S.z=nz;S.y=max(S.y+.65,ng);S.vy=2.5;S.gr=1}
+      say('SOLID BITE! Ice axe anchored—haul upward!',1.8);
+    }else{
+      S.eq.axe=max(0,S.eq.axe-2.2);S.st=max(0,S.st-4);
+      say('GLANCING BLOW! Pick skidded off hard ice—time your swing in the green zone!',2.2);
+    }
+  }else say('You test the snowpack with your ice axe.',1.5);
+};
+
+const plantPiton=()=>{
+  if(S.inv.piton<1){say('No pitons remaining in your pack!',2.5);return}
+  if(S.eq.rope<10){say('Your climbing rope is frayed! Repair your gear first.',2.5);return}
+  S.inv.piton--;S.eq.rope=max(0,S.eq.rope-8);
+  const fx=sin(S.yaw)*5.5,fz=-cos(S.yaw)*5.5,tx=S.x+fx,tz=S.z+fz,ty=ground(tx,tz);
+  ANCHORS.push({x:tx,y:ty,z:tz,tx:S.x,ty:S.y,tz:S.z});
+  rebuildRopes();S.anchored=1;S.anchorTimer=5.0;
+  say('PITON DRIVEN! Fixed climbing rope deployed—ascend along the line!',4);
+};
+
+const nearRope=()=>ANCHORS.some(a=>hypot(S.x-a.x,S.z-a.z)<6.5&&hypot(S.x-a.tx,S.z-a.tz)<6.5);
+const weatherStep=dt=>{WX.clock-=dt;WX.front+=dt*(.08+P*.2);WX.gust=max(0,WX.gust-dt);if(WX.clock<=0){WX.clock=35+Math.random()*55;WX.next=Math.random()<.18+P*.28?2:Math.random()<.54?1:0;if(WX.next!==W.cur){W.cur=WX.next;WX.alert=5;say(WN[W.cur]+' front moving across the ridge.',4)}}if(W.cur===2&&Math.random()<dt*.14)WX.gust=1.5+Math.random()*3;WX.severity=cl((W.cur*.48+WX.gust*.12+P*.25),0,1)};
+
+S.y=ground(S.x,S.z);
+let H=0,hr=7,run=0,paused=1,ended=0,menu=-1,lastCamp=0,msgT=0,wl=0,fw=0,rested=new Set(),W={cur:0,nx:1,t:50},tt=0,info=0,drag=0;
+const WN=['Clear','Windy','Snowstorm'],K={};
+const say=(t,s=4)=>{$('msg').textContent=t;msgT=s};
+const pickW=()=>{const r=Math.random(),s=.12+.4*P;return r<s?2:r<s+.3?1:0};
+const tick=h=>{H+=h;hr=(hr+h)%24;W.t-=h*10;CP.forEach(c=>c.fire=max(0,c.fire-h));P=cl(H/36,0,1);if(W.t<=0){W.cur=W.nx;W.nx=pickW();W.t=35+Math.random()*40}if(!br&&P>.82){br=1;say('The snow bridge collapsed!',6)}};
+const near=()=>CP.findIndex(c=>hypot(c.x-S.x,c.z-S.z)<7.5||insideTent(S.x,S.z)===CP.indexOf(c)),litFire=()=>CP.find(c=>c.fire>0&&hypot(c.fx-S.x,c.fz-S.z)<9);
+const respawn=m=>{const c=CP[lastCamp];S.x=c.x;S.z=c.z+3;S.y=ground(S.x,S.z);S.vy=0;S.gr=1;S.st=max(S.st,60);S.wa=max(S.wa,50);S.hy=max(S.hy,50);S.fd=max(S.fd,50);S.crit=0;S.prevZ=S.z;say(m+' You wake back at '+c.n+'.',7)};
+const sky=()=>{const a=(hr-6)/12*PI,se=sin(a),L=[-cos(a)*.8,se,-.4],ll=hypot(...L),sun=L.map(v=>v/ll),df=sm(-.12,.25,se),du=1-sm(0,.4,abs(se));
+let zen=m3([.015,.025,.08],[.2,.43,.88],df),hor=m3([.05,.07,.15],[.68,.8,.93],df);hor=m3(hor,[1,.5,.28],du*.6);const gr=.3+.7*df;zen=m3(zen,[.5*gr,.55*gr,.6*gr],fw*.7);hor=m3(hor,[.55*gr,.6*gr,.66*gr],fw*.7);
+const L2=se>0?sun:sun.map(v=>-v);let sc=m3([.16,.22,.42],[1,.93,.8],df);sc=m3(sc,[1,.55,.3],du*.35).map(v=>v*(1-.45*fw));
+return{sun:L2,sd:sun,zen,hor,sc,amb:zen.map(v=>v*.55+.07),df,night:1-df}};
+
+// Camp Menu
+const mItem=(k,t)=>`<div class="menuRow" data-act="${k}"><b>${k}</b> &nbsp;${t}</div>`;
+const drawMenu=()=>{const c=CP[menu],lf=c.fire>0;$('menu').innerHTML=`<div><h2>${c.n}</h2><small style="margin:0 0 8px;max-width:none">${c.note}</small>`+
+mItem(1,'Rest (3 h): restore stamina, shelter from the cold')+mItem(2,lf?'Eat a hot meal (+food, +stamina, +warmth)':'Eat (+food, +stamina)')+mItem(3,'Drink (+hydration)')+mItem(4,lf?'Fire burning ('+c.fire.toFixed(1)+' h left)':'Light fire (uses 1 fuel)')+
+mItem(5,`Forecast: ${WN[W.cur]} now, ${WN[W.nx]} in ~${ceil(W.t/10)} h`)+mItem(6,'Continue climbing')+mItem(7,'Repair & sharpen all technical gear (uses 1 repair kit)')+`<small style="margin-top:8px;max-width:none">Food ${S.food} · Water ${S.water} · Fuel ${S.fuel}</small></div>`;
+$('menu').querySelectorAll('.menuRow').forEach(el=>el.onclick=()=>act(+el.dataset.act))};
+const act=k=>{const c=CP[menu],lf=c.fire>0;
+if(k==1){for(let i=0;i<3;i++){const cold=.06+S.y/230*.16+(1-sky().df)*.22+wl*.35;S.wa=cl(S.wa+(lf?25:cold>.12?-cold*5:3),0,100);S.fd=max(0,S.fd-4.5);S.hy=max(0,S.hy-6.5);tick(1)}S.st=min(100,S.st+50);rested.add(menu);say('You rest inside the shelter for three hours.')}
+else if(k==2){if(S.food>0){S.food--;S.uf++;S.fd=min(100,S.fd+45);S.st=min(100,S.st+15);if(lf)S.wa=min(100,S.wa+25);say(lf?'A hot meal. Warmth returns to your fingers.':'You eat.')}else say('No food left.')}
+else if(k==3){if(S.water>0){S.water--;S.uw++;S.hy=min(100,S.hy+50);say('You drink.')}else say('No water left.')}
+else if(k==4){if(!lf&&S.fuel>0){S.fuel--;c.fire=5;say('The camp stove & fire crackle to life.')}else if(!lf)say('No fuel left.')}
+else if(k==5)say('Forecast: '+WN[W.cur]+' now, '+WN[W.nx]+' in about '+ceil(W.t/10)+' h.');
+else if(k==6){menu=-1;$('menu').hidden=1;return}else if(k==7){if(S.inv.repair>0){S.inv.repair--;for(const g of Object.keys(S.eq))S.eq[g]=min(100,S.eq[g]+30);say('You file your ice axe pick, tighten crampons, and inspect every rope.',4)}else say('You need a repair kit.',3)}drawMenu()};
+const openMenu=i=>{menu=i;lastCamp=i;if(CP[i].cache){CP[i].cache=0;S.food++;S.water+=2;S.fuel++;S.inv.piton++;say('Expedition tent cache: +1 food, +2 water, +1 fuel, +1 piton!',5)}$('menu').hidden=0;drawMenu()};
+
+addEventListener('keydown',e=>{
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code))e.preventDefault();
+  if(e.repeat)return;
+  K[e.code]=1;
+  if(!run||paused||ended)return;
+  if(e.code==='KeyM'||e.code==='Tab'){if($('demoDrawer').hidden)openDemo();else closeDemo();return}
+  if(!$('demoDrawer').hidden){if(e.code==='Escape')closeDemo();return}
+  if(menu>=0){
+    const n=+e.code.slice(5);
+    if(e.code.startsWith('Digit')&&n>=1&&n<=7)act(n);
+    else if(e.code=='KeyE'||e.code=='Escape')act(6);
+    return;
+  }
+  if(e.code==='KeyI'){if($('inventory').hidden)invOpen();else invClose();return}
+  if(!$('inventory').hidden){
+    const map={Digit1:'ration',Digit2:'thermos',Digit3:'medkit',Digit4:'repair',Digit5:'piton',Digit6:'flare'};
+    if(map[e.code])useItem(map[e.code]);
+    return;
+  }
+  if(e.code==='KeyC'){S.crouch=S.crouch?0:1;say(S.crouch?'Crouching (low center of gravity on exposed ridges).':'Standing.',1.5);return}
+  if(e.code==='KeyF'){swingIceAxe();return}
+  if(e.code==='KeyG'){plantPiton();return}
+  if(e.code==='KeyE'){
+    if(pickup())return;
+    const n=near();
+    if(n>=0)openMenu(n);
+    else if([[0,0],[2.5,0],[-2.5,0],[0,2.5],[0,-2.5]].some(([a,b])=>wlev(S.x+a,S.z+b)>-1e8)){
+      S.hy=min(100,S.hy+32);S.wa=max(0,S.wa-2);say('You scoop glacial meltwater from the current. Ice cold.',3);
+    }
+  }else if(e.code==='KeyR')respawn('You rappel back to camp.');
+});
+addEventListener('keyup',e=>K[e.code]=0);
+
+addEventListener('mousedown',e=>{
+  drag=1;
+  if(run&&!paused&&!ended&&menu<0&&$('inventory').hidden&&$('demoDrawer').hidden&&e.button===0)swingIceAxe();
+});
+addEventListener('mouseup',()=>drag=0);
+addEventListener('mousemove',e=>{if(!run||paused||menu>=0||!$('demoDrawer').hidden||!(document.pointerLockElement||drag))return;S.yaw+=e.movementX*.0022;S.pit=cl(S.pit-e.movementY*.0022,-1.45,1.45)});
+
+// Procedural Audio
+let AC,wg,wf,fg,rgAudio;
+const initA=()=>{try{AC=new AudioContext();const b=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+const mkN=(t,f,q)=>{const s=AC.createBufferSource();s.buffer=b;s.loop=true;const fl=AC.createBiquadFilter();fl.type=t;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(AC.destination);s.start();return[g,fl]};
+[wg,wf]=mkN('bandpass',400,.6);[fg]=mkN('highpass',3000,.5);[rgAudio]=mkN('lowpass',520,.8)}catch(e){}};
+$('go').onclick=()=>{$('ov').hidden=1;run=1;paused=0;if(!AC)initA();AC&&AC.resume();try{const p=cv0.requestPointerLock();p&&p.catch&&p.catch(()=>{})}catch(e){}};
+document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&run&&!ended&&menu<0&&$('demoDrawer').hidden){paused=1;$('ov').hidden=0;$('go').textContent='Resume'}});
+
+// Sliding Compass Strip Setup
+const COMPASS_LABELS='N · · · NE · · · E · · · SE · · · S · · · SW · · · W · · · NW · · · ';
+$('compassStrip').textContent=COMPASS_LABELS+COMPASS_LABELS+COMPASS_LABELS;
+
+// ============================================================================
+// 5. FRAME UPDATE
+// ============================================================================
+const upd=dt=>{
+  if(!run||paused||ended||menu>=0||!$('demoDrawer').hidden)return;
+  weatherStep(dt);
+  const ns=stageAt();if(ns!==S.stage){S.stage=ns;say(STAGES[ns][0]+' — '+STAGES[ns][1],5)}
+  tick(dt/10);AN.forEach(a=>aUp(a,dt));
+  for(const p of POI)if(!p.d&&hypot(S.x-p.x,S.z-p.z)<24){p.d=1;say(p.m,6)}
+  const wt=[0,.55,1],ft=[0,.35,1];wl+=(wt[W.cur]-wl)*min(1,dt*.4);fw+=(ft[W.cur]-fw)*min(1,dt*.4);
+
+  S.axeCooldown=max(0,S.axeCooldown-dt);
+  S.axeSwing=max(0,S.axeSwing-dt*3.4);
+  if(S.anchorTimer>0){S.anchorTimer-=dt;if(S.anchorTimer<=0)S.anchored=0}
+
+  const targetEye=S.crouch?.95:1.65;
+  S.eyeH=lerp(S.eyeH,targetEye,min(1,dt*10));
+
+  const tn=gnorm(S.x,S.z);
+  S.slopeDeg=Math.acos(cl(tn[1],-1,1))*180/PI;
+  S.onSteep=S.slopeDeg>34?1:0;
+
+  const cg=$('climbGauge');
+  if(S.slopeDeg>32&&S.gr){
+    cg.hidden=false;
+    const phase=(sin(tt*4.8)+1)*.5,skillWin=.28+.14*(S.eq.axe/100);
+    $('cgPin').style.left=(phase*100)+'%';
+    $('cgSweet').style.left=((.5-skillWin*.5)*100)+'%';
+    $('cgSweet').style.width=(skillWin*100)+'%';
+    $('cgTitle').textContent=`${Math.round(S.slopeDeg)}° PITCH · ${S.anchored||nearRope()?'ANCHORED':'UNANCHORED'}`;
+    $('cgHint').textContent=nearRope()?'On Fixed Rope — climb freely!':'Swing Ice Axe [LMB/F] in green zone or plant Piton [G]';
+  }else cg.hidden=true;
+
+  const sf=cos(S.yaw),mx=(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),mz=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),mv=mx||mz;
+  let dx=sin(S.yaw)*mx+cos(S.yaw)*mz,dz=-sf*mx+sin(S.yaw)*mz;const l=hypot(dx,dz)||1;dx/=l;dz/=l;
+
+  const wlHere=wlev(S.x,S.z),waterDepth=max(0,wlHere-S.y),inW=waterDepth>.15;
+  const[curVx,curVz]=wflow(S.x,S.z);
+
+  const spr=K.ShiftLeft&&S.st>4&&mv&&!S.crouch&&!inW;
+  const bootGrip=.65+.35*(S.eq.boots/100);
+  const sp=(spr?6.4:S.crouch?2.2:3.8)*bootGrip*(1-.2*wl)*(S.st<=0?.55:1)*(inW?max(.45,1-waterDepth*.42):1);
+  const stp=sp*dt;let sl=0;
+
+  if(mv){
+    const cur=ground(S.x,S.z);
+    const maxGrad=(S.anchored||nearRope())?2.45:(.70+.22*(S.eq.boots/100));
+    const tr=(a,b)=>{
+      const nx=S.x+a*stp,nz=S.z+b*stp;
+      if(abs(nx)>680||abs(nz)>680)return false;
+      for(const c of CP){
+        if(abs(nx-c.tx)<1.95&&abs(nz-c.tz)<2.35){
+          const wasOut=abs(S.x-c.tx)>=1.95||abs(S.z-c.tz)>=2.35,isOut=abs(nx-c.tx)>=1.95||abs(nz-c.tz)>=2.35;
+          if(wasOut!==isOut&&!(nx<c.tx-1.2&&abs(nz-c.tz)<.72))return false;
+        }
+      }
+      const g=ground(nx,nz),d=stp*hypot(a,b)||1,grad=(g-cur)/d;
+      if(S.gr?grad>maxGrad:g>S.y+.65)return false;
+      sl=grad;S.x=nx;S.z=nz;return true;
+    };
+    if(![[dx,dz],[dx,0],[0,dz]].some(([a,b])=>tr(a,b))&&sl>.7&&!msgT)say('Too steep to walk! Swing your Ice Axe [LMB/F] or plant a Piton [G].',2.5);
+    S.bob+=dt*(spr?11:7);
+  }
+
+  if(inW){
+    const dragFactor=cl(waterDepth*.75,0,1.2);
+    S.x+=curVx*dragFactor*dt;S.z+=curVz*dragFactor*dt;
+    if(K.Space&&waterDepth>.6){S.vy=lerp(S.vy,3.2,dt*5);S.gr=0}
+  }
+  if(S.gr&&S.slopeDeg>40&&!S.anchored&&!nearRope()&&!S.crouch){
+    S.x+=tn[0]*2.4*dt;S.z+=tn[2]*2.4*dt;
+    if(!msgT)say('LOSING TRACTION! Crouch [C] or swing Ice Axe [LMB/F] to self-arrest!',2);
+  }
+  if(K.Space&&S.gr&&S.st>8&&!inW){S.vy=6.8;S.gr=0;S.st-=7}
+  const g=ground(S.x,S.z);
+  if(S.gr){if(S.y-g<1.6)S.y=g;else S.gr=0}
+  if(!S.gr){const grav=inW?6.5:20;S.vy-=grav*dt;S.y+=S.vy*dt;if(S.y<=g&&S.vy<=0){S.y=g;S.vy=0;S.gr=1}}
+
+  const inTent=insideTent(S.x,S.z)>=0;
+  const dr=(spr?9:0)+(mv?max(0,sl)*6.5:0)+(inW?2.5:0),rg=(mv?(spr?0:1.2):4.8)*(S.hy<15||S.fd<15?.3:1)*(inTent?1.35:1);
+  S.st=cl(S.st+(rg-dr)*dt,0,100);
+  S.fd=max(0,S.fd-.45*dt*(1+(spr?.5:0)));
+  S.hy=max(0,S.hy-.65*dt*(1+(spr?.6:0)));
+
+  const sk=sky(),lf=litFire();
+  const cold=(inTent?0:(.06+cl(S.y/230,0,1)*.16+sk.night*.22+wl*.35+WX.severity*.22))+(inW?.32:0);
+  const wear=(spr?dt*1.5:0)+(WX.severity*dt*.55)+(inW?dt*.4:0);
+  S.eq.boots=max(0,S.eq.boots-wear);
+  S.eq.coat=max(0,S.eq.coat-(inTent?0:WX.severity*dt*.3));
+  S.wet=cl(S.wet+(inW?dt*14:-dt*(inTent||lf?8:1.5)),0,100);
+  if(S.eq.coat<20||S.wet>50)S.wa=max(0,S.wa-dt*.35);
+  S.wa=cl(S.wa+(lf||inTent?2.8:cold>.10?-cold*(S.fd<10||S.hy<10?1.5:1):.35)*dt,0,100);
+
+  $('frostFx').style.opacity=cl((45-S.wa)/45,0,.95);
+
+  if(S.wa<=0||S.hy<=0||S.fd<=0){S.crit+=dt;if(S.crit>4)respawn(S.wa<=0?'Hypothermia overwhelms you.':S.hy<=0?'Severe dehydration overwhelms you.':'Exhaustion and hunger overwhelm you.')}else S.crit=max(0,S.crit-dt);
+  if(hb(S.x,S.z)-S.y>7)respawn('You fell into the glacier crevasse.');
+  if(S.prevZ>ZC&&S.z<=ZC){S.route=abs(S.x-BX)<4?'Snow bridge shortcut':'Stable glacier path'}S.prevZ=S.z;
+  if(!msgT&&(S.wa<25||S.hy<25||S.fd<25))say(S.wa<25?'You are freezing. Step inside a tent or light a fire.':S.hy<25?'Dangerously dehydrated—drink from a thermos or river.':'Very hungry—eat a ration.',3);
+  if(!br&&P>.5&&hypot(S.x-BX,S.z-ZC)<45&&!msgT)say('The snow bridge groans. Deep fractures spider across the ice.',3);
+  if(hypot(S.x,S.z)<7&&S.y>gy(0,0)-3.5){
+    ended=1;document.exitPointerLock&&document.exitPointerLock();const d=floor(H/24)+1;
+    $('ov').hidden=0;$('ov').innerHTML=`<h1>SUMMIT</h1><h2>4,550m Peak Reached.</h2><p style="color:#ffcc83;letter-spacing:.18em">THE LAST ASCENT — COMPLETE</p><p>Dawn breaks across the jagged Himalayan horizon. You plant your expedition marker beside the summit cairn.</p><p><b>Days:</b> ${d} · <b>Rations used:</b> ${S.uf} · <b>Water used:</b> ${S.uw} · <b>Camps rested at:</b> ${rested.size} · <b>Route:</b> ${S.route}</p><button class="cta" onclick="location.reload()">Climb Again</button>`;
+  }
+  if(msgT>0&&(msgT-=dt)<=0)$('msg').textContent='';
+
+  const riverDist=abs(S.x-rx(cl(S.z,RZ0,RZ1))),riverProximity=(S.z>RZ0-20&&S.z<RZ1+20)?cl(1-riverDist/35,0,1):0;
+  if(wg){wg.gain.value=(inTent?.008:.02)+.16*wl+.05*S.y/230;wf.frequency.value=300+500*wl;fg.gain.value=lf?.045*(.6+Math.random()*.8):0}
+  if(rgAudio)rgAudio.gain.value=riverProximity*.11;
+};
+
+// ============================================================================
+// 6. RENDER LOOP
+// ============================================================================
+let lt=performance.now();const sn=LOW?1800:4200;
+const frame=now=>{
+  const dt=min(max((now-lt)/1000,0),.033);lt=now;tt+=dt;upd(dt);
+  const dpr=min(devicePixelRatio||1,LOW?1:1.6),w=innerWidth*dpr|0,h=innerHeight*dpr|0;
+  if(cv0.width!=w||cv0.height!=h){cv0.width=w;cv0.height=h}
+
+  // Update Compass Strip smoothly
+  const deg=((S.yaw*180/PI)%360+360)%360;
+  const strip=$('compassStrip');
+  const unitW=strip.offsetWidth/3||360;
+  strip.style.transform=`translateX(${120 - unitW - (deg/360)*unitW}px)`;
+
+  const sk=sky(),cy=cos(S.pit),f=[sin(S.yaw)*cy,sin(S.pit),-cos(S.yaw)*cy],r=[cos(S.yaw),0,sin(S.yaw)],u=[-sin(S.yaw)*sin(S.pit),cy,cos(S.yaw)*sin(S.pit)];
+  const e=[S.x,S.y+S.eyeH+(S.gr?sin(S.bob)*.045:0),S.z],asp=w/h,fov=1/Math.tan(.6),n=.1,fa=3000;
+  const Pm=new Float32Array([fov/asp,0,0,0,0,fov,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0]),dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const V=new Float32Array([r[0],u[0],-f[0],0,r[1],u[1],-f[1],0,r[2],u[2],-f[2],0,-dot(r,e),-dot(u,e),dot(f,e),1]),VP=mul(Pm,V);
+
+  // PASS 1: Shadow Map
+  const ld=sk.sun,upS=abs(ld[1])>.95?[1,0,0]:[0,1,0];
+  let sr=[upS[1]*ld[2]-upS[2]*ld[1],upS[2]*ld[0]-upS[0]*ld[2],upS[0]*ld[1]-upS[1]*ld[0]];
+  const srl=hypot(...sr)||1;sr=sr.map(v=>v/srl);
+  const su=[ld[1]*sr[2]-ld[2]*sr[1],ld[2]*sr[0]-ld[0]*sr[2],ld[0]*sr[1]-ld[1]*sr[0]];
+  const sc=[S.x+f[0]*35,S.y+25,S.z+f[2]*35],rad=135,zn=-350,zf=350;
+  const LP=new Float32Array([1/rad,0,0,0, 0,1/rad,0,0, 0,0,-2/(zf-zn),0, 0,0,-(zf+zn)/(zf-zn),1]);
+  const LV=new Float32Array([sr[0],su[0],ld[0],0, sr[1],su[1],ld[1],0, sr[2],su[2],ld[2],0, -dot(sr,sc),-dot(su,sc),-dot(ld,sc),1]);
+  const LVP=mul(LP,LV);
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER,smFbo);gl.viewport(0,0,SM_RES,SM_RES);gl.clear(gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LESS);gl.disable(gl.BLEND);
+  set(pShad,{uLVP:LVP,uO:[0,0,0],uT:tt,uYaw:0,uSc:1,uWind:wl});
+  gl.bindVertexArray(vT);gl.drawElements(gl.TRIANGLES,TI.length,gl.UNSIGNED_INT,0);
+  gl.bindVertexArray(vP);gl.drawArrays(gl.TRIANGLES,0,mainN);
+  if(!br){set(pShad,{uO:[0,-sag(),0]});gl.bindVertexArray(vB);gl.drawArrays(gl.TRIANGLES,0,bmN)}
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+  // PASS 2: Main Camera
+  gl.viewport(0,0,w,h);gl.clearColor(.008,.015,.035,1);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
+  set(pK,{uR:r,uU:u,uF:f,uSun:sk.sd,uZen:sk.zen,uHor:sk.hor,uSunC:sk.sc,uAsp:asp,uTan:Math.tan(.6),uNight:sk.night,uT:tt,uCl:.35+.5*fw});
+  gl.drawArrays(gl.TRIANGLES,0,3);
+
+  gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LESS);gl.depthRange(0.0,1.0);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,smTex);
+
+  let lf=null,bd=1e9;for(const c of CP)if(c.fire>0){const d=hypot(c.fx-S.x,c.fz-S.z);if(d<bd){bd=d;lf=c}}
+  const fl=.8+.2*sin(tt*17)+.1*sin(tt*31);
+  const base={uVP:VP,uLVP:LVP,uCam:e,uSun:sk.sun,uSunC:sk.sc,uAmb:sk.amb,uHor:sk.hor,uFire:lf?[lf.fx,lf.fy,lf.fz]:[0,-999,0],uFireI:lf?5*fl:0,uFlick:lf?fl-.8:0,uFog:.0014+.0042*fw+.0006*P,uMelt:P,uCrack:0,uO:[0,0,0],uT:tt,uSc:1,uYaw:0,uWind:wl,uSmRes:SM_RES};
+  set(pS,base);gl.uniform1i(gl.getUniformLocation(pS,'uShadow'),0);
+
+  gl.bindVertexArray(vT);gl.drawElements(gl.TRIANGLES,TI.length,gl.UNSIGNED_INT,0);
+  gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.0,1.0);
+  gl.bindVertexArray(vP);gl.drawArrays(gl.TRIANGLES,0,mainN);
+  CP.forEach((c,i)=>{if(c.fire>0)gl.drawArrays(gl.TRIANGLES,FR[i][0],FR[i][1])});
+  if(!br){set(pS,{uO:[0,-sag(),0],uCrack:sm(.35,.78,P)});gl.bindVertexArray(vB);gl.drawArrays(gl.TRIANGLES,0,bmN)}
+  if(dynCount>0){set(pS,{uO:[0,0,0],uCrack:0});gl.bindVertexArray(dynVao);gl.drawArrays(gl.TRIANGLES,0,dynCount)}
+  for(const a of AN){if(hypot(a.x-S.x,a.z-S.z)>320)continue;set(pS,{uO:[a.x,gy(a.x,a.z)+(a.w>0?0:abs(sin(tt*6))*.05),a.z],uYaw:a.yaw,uSc:a.sc});gl.bindVertexArray(a.v);gl.drawArrays(gl.TRIANGLES,0,a.n)}
+  gl.bindVertexArray(vBd);for(const b of BD){const g=tt*b.sp+b.ph,x=b.cx+cos(g)*b.r,z=b.cz+sin(g)*b.r;set(pS,{uO:[x,gy(x,z)+b.h+sin(tt+b.ph)*3,z],uYaw:g+PI/2,uSc:1.3});gl.drawArrays(gl.TRIANGLES,0,nBd)}
+
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  set(pS,{uO:[0,0,0],uCrack:0,uSc:1,uYaw:0});gl.bindVertexArray(vW);gl.drawArrays(gl.TRIANGLES,0,wmN);
+
+  gl.depthMask(false);
+  set(pN,{uVP:VP,uCam:e,uT:tt,uWind:wl,uCnt:Math.floor(sn*(.12+.88*fw)*(P>.3?1:.8)),uHor:sk.hor});
+  gl.bindVertexArray(null);gl.drawArrays(gl.POINTS,0,sn);gl.depthMask(true);
+
+  // PASS 3: Viewmodel Ice Axe
+  gl.clear(gl.DEPTH_BUFFER_BIT);gl.disable(gl.BLEND);
+  const sw=sin(S.axeSwing*PI);
+  const axePos=[e[0]+r[0]*.34+f[0]*(.52+sw*.18)-u[0]*(.26-sw*.14),e[1]+r[1]*.34+f[1]*(.52+sw*.18)-u[1]*(.26-sw*.14)+sin(S.bob)*.012,e[2]+r[2]*.34+f[2]*(.52+sw*.18)-u[2]*(.26-sw*.14)];
+  set(pS,{uO:axePos,uYaw:-S.yaw+.25,uSc:1.0});
+  gl.bindVertexArray(vAxe);gl.drawArrays(gl.TRIANGLES,0,axeN);
+
+  // HUD Updates
+  for(const[i,v,lbl]of[['pS',S.st,'vS'],['pW',S.wa,'vW'],['pH',S.hy,'vH'],['pF',S.fd,'vF']]){
+    const el=$(i);el.firstChild.style.width=v+'%';el.classList.toggle('lo',v<25);$(lbl).textContent=Math.round(v)+'%';
+  }
+  if(now-info>160){
+    info=now;const hh=floor(hr),mm=floor(hr%1*60),n2=near(),inT=insideTent(S.x,S.z)>=0;
+    const distSummit=Math.round(hypot(S.x,S.z));
+    $('info').innerHTML=`Day ${floor(H/24)+1} · ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')} · ${WN[W.cur]}<br>${inT?'<span style="color:var(--ok)">[SHELTERED IN TENT]</span><br>':''}Altitude <b>${Math.round(2400+S.y*10)} m</b> · Slope <b>${Math.round(S.slopeDeg)}°</b><br>Summit Dist <b>${distSummit} m</b> · Wind <b>${Math.round(WX.severity*100)}%</b>`+(n2>=0&&menu<0&&run?'<br><b style="color:var(--ac)">Press [E] — '+CP[n2].n+'</b>':'');
+    $('sup').innerHTML=`<b style="color:var(--ac2)">PACK [I]</b> &nbsp; Food <b>${S.food}</b> · Water <b>${S.water}</b> · Fuel <b>${S.fuel}</b> · Pitons <b>${S.inv.piton}</b>`;
+    $('equipHud').innerHTML=`<b>ICE AXE ${Math.round(S.eq.axe)}% · BOOTS ${Math.round(S.eq.boots)}%</b><span><span class="kbd">LMB/F</span> Axe · <span class="kbd">G</span> Rope (${S.inv.piton}) · <span class="kbd">C</span> ${S.crouch?'Stand':'Crouch'} · <span class="kbd">M</span> Demo</span>`;
+    $('mission').querySelector('b').textContent=STAGES[S.stage][0];
+    $('mission').querySelector('span').textContent=STAGES[S.stage][1];
+    $('stage').textContent=STAGES[S.stage][0];
+  }
+  requestAnimationFrame(frame);
+};
+say('Step inside Base Camp tent [E] or press [M] to warp to any landmark for demo.',6);
+requestAnimationFrame(frame);
+})();
+</script></body></html>
